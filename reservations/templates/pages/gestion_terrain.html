@@ -1,0 +1,192 @@
+{% extends "index.html" %}
+{% load static %}
+
+{% block bodygestion_terrain %}
+
+<!-- Bootstrap & jQuery -->
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+<!-- MODALS CRUD -->
+{% include "pages/modifier_terrain.html" %}
+
+<div class="container-fluid mt-3">
+    <h2>Liste des Cités</h2>
+    {% include "pages/ajouter_terrain.html" %}
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div class="col-12 col-md-6 col-lg-3 mt-3">
+        <input id="searchCite"
+               type="search"
+               class="form-control "
+               placeholder="Rechercher par téléphone">
+    </div>
+    </div>
+
+    <!-- LISTE DES TERRAINS -->
+    <!-- CARDS -->
+<div class="row g-3" id="ListeCite">
+    {% for terrain in terrains %}
+    <div class="col-sm-6 col-md-4 col-lg-3">
+        <div class="card shadow text-white"
+             id="terrain{{ terrain.id }}"
+             style="height:200px;background-size:cover;background-position:center;
+                    background-image:url('{{ terrain.photo1.url}}')"
+             data-nom_fr="{{ terrain.nom_fr }}"
+             data-nom_ar="{{ terrain.nom_ar }}"
+             data-longitude="{{ terrain.longitude }}"
+             data-latitude="{{ terrain.latitude }}"
+             data-nombre_joueur="{{ terrain.nombre_joueur }}"
+             data-lieu_fr="{{ terrain.lieu_fr }}"
+             data-lieu_ar="{{ terrain.lieu_ar }}"
+             data-prix_par_heure="{{ terrain.prix_par_heure }}"
+             data-client_id="{{ terrain.client.id }}"
+             data-wilaye_id="{{ terrain.wilaye.code_wilaye }}"
+             data-moughataa_id="{{ terrain.moughataa.id }}"
+             data-ballon_disponible="{{ terrain.ballon_disponible }}"
+             data-maillot_disponible="{{ terrain.maillot_disponible }}"
+             data-eclairage_disponible="{{ terrain.eclairage_disponible }}"
+             data-heure_fermeture="{{ terrain.heure_fermeture }}"
+             data-heure_ouverture="{{ terrain.heure_ouverture }}"
+             data-numero_telephone="{{ terrain.client.numero_telephone }}"
+             data-eau="{{ terrain.eau }}"
+             data-siffler="{{ terrain.siffler }}"
+             data-parking="{{ terrain.parking }}"
+             data-gazon_artificiel="{{ terrain.gazon_artificiel }}">
+            <div class="card-body d-flex flex-column justify-content-between bg-dark bg-opacity-75">
+                <div>
+                    <h6 class="mb-0">{{ terrain.wilaye.nom_wilaye_fr }}</h6>
+                    <h5 class="fw-bold">{{ terrain.nom_fr }}</h5>
+                </div>
+                <button class="btn btn-light btn-sm" onclick="showDetails('{{ terrain.id }}')">Détails</button>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- MODALS -->
+{% for terrain in terrains %}
+<div class="modal fade" id="details{{ terrain.id }}" tabindex="-1">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+            <!-- HEADER -->
+            <div class="modal-header bg-light">
+                <div>
+                    <h5 class="modal-title fw-bold text-primary">{{ terrain.nom_fr }}</h5>
+                    <small class="text-muted">{{ terrain.wilaye.nom_wilaye_fr }} – {{ terrain.moughataa.nom_ar }}</small>
+                </div>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-warning btn-sm" onclick="afficherModalModification('{{ terrain.id }}')">Modifier</button>
+                    <button class="btn btn-danger btn-sm" onclick="SuprimerCite('{{ terrain.id }}')">Supprimer</button>
+                    <button class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+            </div>
+            <!-- BODY -->
+            <div class="modal-body">
+                <!-- Infos, équipements, localisation, photos -->
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <ul class="list-group list-group-flush">
+                            <li class="list-group-item"><b>Client :</b> <span class="badge bg-secondary">{{ terrain.client.numero_telephone }}</span></li>
+                            <li class="list-group-item"><b>Prix / heure :</b> <span class="badge bg-success">{{ terrain.prix_par_heure }}</span></li>
+                            <li class="list-group-item"><b>Nombre de joueurs :</b> {{ terrain.nombre_joueur }}</li>
+                            <li class="list-group-item"><b>Lieu FR :</b> {{ terrain.lieu_fr }}</li>
+                            <li class="list-group-item"><b>Lieu AR :</b> {{ terrain.lieu_ar }}</li>
+                            <li class="list-group-item"><b>Ouverture :</b> <span class="badge bg-primary">{{ terrain.heure_ouverture }}</span> → <span class="badge bg-danger">{{ terrain.heure_fermeture }}</span></li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <ul class="list-group list-group-flush">
+                            <li class="list-group-item d-flex justify-content-between"><b>Ballon disponible</b> <span class="badge {{ terrain.ballon_disponible|yesno:'bg-success,bg-danger' }}">{{ terrain.ballon_disponible|yesno:"Oui,Non" }}</span></li>
+                            <li class="list-group-item d-flex justify-content-between"><b>Maillot disponible</b> <span class="badge {{ terrain.maillot_disponible|yesno:'bg-success,bg-danger' }}">{{ terrain.maillot_disponible|yesno:"Oui,Non" }}</span></li>
+                            <li class="list-group-item d-flex justify-content-between"><b>Éclairage</b> <span class="badge {{ terrain.eclairage_disponible|yesno:'bg-success,bg-danger' }}">{{ terrain.eclairage_disponible|yesno:"Oui,Non" }}</span></li>
+                            <li class="list-group-item d-flex justify-content-between"><b>Eau</b> <span class="badge {{ terrain.eau|yesno:'bg-success,bg-danger' }}">{{ terrain.eau|yesno:"Oui,Non" }}</span></li>
+                            <li class="list-group-item d-flex justify-content-between"><b>Siffler</b> <span class="badge {{ terrain.siffler|yesno:'bg-success,bg-danger' }}">{{ terrain.siffler|yesno:"Oui,Non" }}</span></li>
+                            <li class="list-group-item d-flex justify-content-between"><b>Parking</b> <span class="badge {{ terrain.parking|yesno:'bg-success,bg-danger' }}">{{ terrain.parking|yesno:"Oui,Non" }}</span></li>
+                            <li class="list-group-item d-flex justify-content-between"><b>Gazon artificiel</b> <span class="badge {{ terrain.gazon_artificiel|yesno:'bg-success,bg-danger' }}">{{ terrain.gazon_artificiel|yesno:"Oui,Non" }}</span></li>
+                        </ul>
+                    </div>
+                </div>
+                <!-- Localisation -->
+                <div class="row mb-4">
+                    <div class="col-md-6"><p><b>Latitude :</b> {{ terrain.latitude }}</p></div>
+                    <div class="col-md-6"><p><b>Longitude :</b> {{ terrain.longitude }}</p></div>
+                </div>
+                <!-- Photos -->
+                <div class="row g-3">
+                    <div class="col-md-4"><img src="{% if terrain.photo1 %}{{ terrain.photo1.url }}{% endif %}" class="img-fluid rounded shadow-sm"></div>
+                    <div class="col-md-4"><img src="{% if terrain.photo2 %}{{ terrain.photo2.url }}{% endif %}" class="img-fluid rounded shadow-sm"></div>
+                    <div class="col-md-4"><img src="{% if terrain.photo3 %}{{ terrain.photo3.url }}{% endif %}" class="img-fluid rounded shadow-sm"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endfor %}
+
+    </div>
+</div>
+
+<!-- ======================= SCRIPTS CRUD (LOGIQUE IDENTIQUE) ======================= -->
+<script>
+function showDetails(id){
+    new bootstrap.Modal(document.getElementById('details'+id)).show();
+}
+
+/* ===== FILTRE PAR TÉLÉPHONE (CORRIGÉ) ===== */
+$('#searchCite').on('input', function () {
+
+    let value = $(this).val().toLowerCase();
+
+    $('[id^="terrain"]').each(function () {
+
+        let tel = String($(this).data('numero_telephone')).toLowerCase();
+
+        // on masque / affiche la COL Bootstrap
+        $(this).closest('.col-sm-6, .col-md-4, .col-lg-3')
+               .toggle(tel.includes(value));
+    });
+});
+
+/* ===== CRUD ===== */
+window.afficherModalModification = function(terrain_id) 
+{ var terrain = $("#terrain" + terrain_id).data(); $('#terrain_id').val(terrain_id);
+$('#nom_fr_modifier').val(terrain.nom_fr); 
+$('#nom_ar_modifier').val(terrain.nom_ar); 
+$('#longitude_modifier').val(terrain.longitude);
+$('#latitude_modifier').val(terrain.latitude); 
+$('#nombre_joueur_modifier').val(terrain.nombre_joueur);
+$('#lieu_fr_modifier').val(terrain.lieu_fr);
+$('#lieu_ar_modifier').val(terrain.lieu_ar); 
+$('#prix_par_heure_modifier').val(terrain.prix_par_heure); 
+$('#client_modifier').val(terrain.numero_telephone);
+$('#Wilaye_modifier').val(terrain.wilaye_id); 
+$('#Moughataa_modifier').val(terrain.moughataa_id);
+$('#heure_ouverture_modifier').val(terrain.heure_ouverture);
+$('#heure_fermeture_modifier').val(terrain.heure_fermeture); 
+$('#ballon_disponible_true_modifier').prop('checked', terrain.ballon_disponible === 'True'); 
+$('#ballon_disponible_false_modifier').prop('checked', terrain.ballon_disponible === 'False');
+$('#gazon_artificiel_true_modifier').prop('checked', terrain.gazon_artificiel === 'True'); 
+$('#gazon_artificiel_false_modifier').prop('checked', terrain.gazon_artificiel === 'False');
+$('#eau_true_modifier').prop('checked', terrain.parking === 'True'); $('#eau_false_modifier').prop('checked', terrain.parking === 'False'); 
+$('#parking_true_modifier').prop('checked', terrain.parking === 'True'); $('#parking_false_modifier').prop('checked', terrain.parking === 'False'); 
+$('#siffler_true_modifier').prop('checked', terrain.siffler === 'True'); $('#siffler_false_modifier').prop('checked', terrain.siffler === 'False'); 
+$('#maillot_disponible_true_modifier').prop('checked', terrain.maillot_disponible === 'True'); $('#maillot_disponible_false_modifier').prop('checked', terrain.maillot_disponible === 'False'); 
+$('#eclairage_disponible_true_modifier').prop('checked', terrain.eclairage_disponible === 'True'); $('#eclairage_disponible_false_modifier').prop('checked', terrain.eclairage_disponible === 'False');
+$('#sonorisation_disponible_true_modifier').prop('checked', terrain.sonorisation_disponible === 'True'); $('#sonorisation_disponible_false_modifier').prop('checked', terrain.sonorisation_disponible === 'False');
+$('#modifierCiteModal').modal('show'); var formAction = "{% url 'modifier_terrain' 0 %}".replace('/0/', '/' + terrain_id + '/'); $('#modifierCiteForm').attr('action', formAction); };
+
+function SuprimerCite(id){
+    if(!confirm("Supprimer ce terrain ?")) return;
+
+    $.post(
+        "{% url 'supprimer_terrain' 0 %}".replace('/0/','/'+id+'/'),
+        {'csrfmiddlewaretoken':'{{ csrf_token }}'},
+        function(){ location.reload(); }
+    );
+}
+</script>
+
+
+{% endblock bodygestion_terrain %}

@@ -1,0 +1,252 @@
+
+<div class="container-fluid mt-3 ">
+    <button type="button" class="btn btn-success fw-bold" data-bs-toggle="modal" data-bs-target="#ajouterCiteModal">
+        Ajouter Cité
+    </button>
+
+    <!-- MODAL AJOUTER CITE -->
+    <div class="modal fade" id="ajouterCiteModal" tabindex="-1" aria-labelledby="ajouterCiteModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content text-dark">
+
+                <div class="modal-header border-bottom border-success">
+                    <h5 class="modal-title" id="ajouterCiteModalLabel">Ajouter Cité</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+
+                <div class="modal-body">
+                    <form id="citeForm" method="post" enctype="multipart/form-data" action="{% url 'gestion_terrain' %}">
+
+                        {% csrf_token %}
+
+                        <!-- STEP 1 -->
+                        <div class="step" id="step1">
+                            <div class="row g-2">
+                                <div class="col-md-6">
+                                    <label class="form-label">Nom (Français)</label>
+                                    <input type="text" class="form-control" name="nom_fr" required>
+
+                                    <label class="form-label mt-2">Nom (Arabe)</label>
+                                    <input type="text" class="form-control" name="nom_ar" required>
+
+                                    <label class="form-label mt-2">Lieu (Français)</label>
+                                    <input type="text" class="form-control" name="lieu_fr" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Lieu (Arabe)</label>
+                                    <input type="text" class="form-control" name="lieu_ar" required>
+
+                                    <label class="form-label mt-2">Longitude</label>
+                                    <input type="number" step="any" class="form-control" name="longitude" required>
+
+                                    <label class="form-label mt-2">Latitude</label>
+                                    <input type="number" step="any" class="form-control" name="latitude" required>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- STEP 2 -->
+                        <div class="step d-none" id="step2">
+                            <div class="row g-2">
+                                <div class="col-md-6">
+                                    <label class="form-label">Photo 1</label>
+                                    <input type="file" class="form-control" name="photo1">
+
+                                    <label class="form-label mt-2">Photo 2</label>
+                                    <input type="file" class="form-control" name="photo2">
+
+                                    <label class="form-label mt-2">Photo 3</label>
+                                    <input type="file" class="form-control" name="photo3">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Nombre de Joueurs</label>
+                                    <input type="number" class="form-control" name="nombre_joueur" required>
+
+                                    <label class="form-label mt-2">Prix par Heure</label>
+                                    <input type="number" class="form-control" name="prix_par_heure" required>
+
+                                    <label class="form-label mt-2">Client (Téléphone)</label>
+                                    <input type="number" class="form-control" name="client" required>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- STEP 3 -->
+                        <div class="step d-none" id="step3">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold">Éclairage</label>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="eclairage_disponible" value="True"> Oui
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="eclairage_disponible" value="False"> Non
+                                    </div>
+
+                                    <label class="form-label fw-bold mt-2">Parking</label>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="parking" value="True"> Oui
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="parking" value="False"> Non
+                                    </div>
+
+                                    <label class="form-label fw-bold mt-2">Siffler</label>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="siffler" value="True"> Oui
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="siffler" value="False"> Non
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold">Ballon</label>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="ballon_disponible" value="True"> Oui
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="ballon_disponible" value="False"> Non
+                                    </div>
+
+                                    <label class="form-label fw-bold mt-2">Maillot</label>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="maillot_disponible" value="True"> Oui
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="maillot_disponible" value="False"> Non
+                                    </div>
+
+                                    <label class="form-label fw-bold mt-2">Gazon Artificiel</label>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="gazon_artificiel" value="True"> Oui
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="gazon_artificiel" value="False"> Non
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- STEP 4 -->
+                        <div class="step d-none" id="step4">
+                            <div class="row g-2">
+                                <div class="col-md-6">
+                                    <label class="form-label">Heure Ouverture</label>
+                                    <input type="time" class="form-control" name="heure_ouverture" required>
+
+                                    <label class="form-label mt-2">Heure Fermeture</label>
+                                    <input type="time" class="form-control" name="heure_fermeture" required>
+
+                                    <label class="form-label mt-2">Wilaye</label>
+                                    <select class="form-select" id="Wilaye" name="Wilaye" required>
+                                        <option value="">Sélectionnez une wilaya</option>
+                                        {% for wilaye in wilayes %}
+                                        <option value="{{ wilaye.code_wilaye }}">{{ wilaye.nom_wilaye_fr }} - {{ wilaye.nom_wilaye_Ar }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Moughataa</label>
+                                    <select class="form-select" id="Moughataa" name="Moughataa" required>
+                                        <option value="">Sélectionnez un moughataa</option>
+                                    </select>
+
+                                    <label class="form-label mt-2">Eau</label>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="eau" value="True"> Oui
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="eau" value="False"> Non
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Navigation STEP -->
+                        <div class="d-flex justify-content-between mt-3 mb-2">
+                            <button type="button" id="prevBtn" class="btn btn-secondary d-none">Précédent</button>
+                            <button type="button" id="nextBtn" class="btn btn-primary">Suivant</button>
+                        </div>
+
+                        <!-- Submit -->
+                        <div class="modal-footer">
+                            <button type="submit" id="submitBtn" class="btn btn-success">Ajouter</button>
+                        </div>
+
+                    </form>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Bootstrap 5 JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<!-- JQuery (pour fetch & scripts existants) -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+<!-- STEP NAVIGATION -->
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    let currentStep = 1;
+    const totalSteps = 4;
+    const steps = document.querySelectorAll(".step");
+    const prevBtn = document.getElementById("prevBtn");
+    const nextBtn = document.getElementById("nextBtn");
+
+    function showStep(step) {
+        steps.forEach((el, index) => {
+            el.classList.toggle("d-none", index !== step - 1);
+        });
+        updateButtons();
+    }
+
+    function updateButtons() {
+        prevBtn.classList.toggle("d-none", currentStep === 1);
+        nextBtn.classList.toggle("d-none", currentStep === totalSteps);
+    }
+
+    nextBtn.addEventListener("click", () => {
+        if (currentStep < totalSteps) {
+            currentStep++;
+            showStep(currentStep);
+        }
+    });
+
+    prevBtn.addEventListener("click", () => {
+        if (currentStep > 1) {
+            currentStep--;
+            showStep(currentStep);
+        }
+    });
+
+    showStep(currentStep);
+});
+</script>
+
+<!-- FETCH WILAYE -> MOUGHATAA -->
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const wilayaSelect = document.getElementById('Wilaye');
+    const moughataaSelect = document.getElementById('Moughataa');
+
+    wilayaSelect.addEventListener('change', function () {
+        const wilayaId = this.value;
+        moughataaSelect.innerHTML = '<option value="">Sélectionnez un moughataa</option>';
+        if (wilayaId) {
+            fetch(`/get-moughataa/${wilayaId}/`)
+                .then(response => response.json())
+                .then(data => {
+                    data.moughataas.forEach(moughataa => {
+                        const option = document.createElement('option');
+                        option.value = moughataa.id;
+                        option.textContent = `${moughataa.nom_fr} - ${moughataa.nom_ar}`;
+                        moughataaSelect.appendChild(option);
+                    });
+                })
+                .catch(error => console.error('Erreur lors du chargement des moughataas:', error));
+        }
+    });
+});
+</script>

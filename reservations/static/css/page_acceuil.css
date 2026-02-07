@@ -1,0 +1,33 @@
+/* Cartes déjà stylées par Bootstrap, juste quelques ajustements */
+.card {
+    border-radius: 0.5rem;
+}
+
+.card-text i {
+    font-size: 1.5rem;
+}
+/* Scroll pour conteneur des graphiques */
+#charts-container {
+    overflow-y: auto;
+}
+
+#charts-container::-webkit-scrollbar {
+    width: 6px;
+}
+
+#charts-container::-webkit-scrollbar-thumb {
+    background-color: rgba(0,0,0,0.2);
+    border-radius: 3px;
+}
+
+#charts-container::-webkit-scrollbar-track {
+    background-color: transparent;
+}
+#citesParWilayaChart {
+    height: 40vh;
+    width: 100%;
+}
+.chart-container canvas {
+    width: 100% !important;
+    height: 40vh !important;
+}

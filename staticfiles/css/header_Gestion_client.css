@@ -1,0 +1,37 @@
+.header_Gestion_client{
+    width: 300px;
+    padding: 10px;
+    height: 10vh;
+    margin-top: -1%;
+}
+
+
+input[type="search"]{
+    width: 98%;
+    height: 45px;
+    outline: none;
+    border: 1px solid  black;
+    border-radius: 10px;
+    padding-left: 20px;
+    
+ }
+::placeholder{
+    color: black;
+}
+@media screen and (min-width: 268px) and (max-width: 780px){
+    .header_Gestion_client {
+        width: 95%; 
+        height: 8vh; 
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+    input[type="search"] {
+        width: 100%;
+        height: 30px;
+        font-size: 10px;
+        outline: none;
+        border: 1px solid  silver;
+        border-radius: 10px;
+    }
+}

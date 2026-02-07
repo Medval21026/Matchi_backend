@@ -1,0 +1,97 @@
+{% extends "index.html" %}
+{% load static %}
+
+{% block listes_jouers %}
+<div class="container mt-4">
+
+    <h1 class="mb-4 ">Liste des Joueurs</h1>
+
+    <!-- RECHERCHE -->
+    <div class="mb-4 d-flex justify-content">
+        <div class="col-12 col-md-6 col-lg-3">
+        <input id="searchJouer" type="search" class="form-control" placeholder="Rechercher un joueur">
+    </div>
+    </div>
+
+
+    <!-- LISTE DES JOUEURS -->
+    <div class="row g-4" id="joueursContainer">
+        {% for joueur in joueurs %}
+        <div class="col-12 col-sm-6 col-md-4 col-lg-3 joueur-card" data-numero_telephone="{{ joueur.numero_telephone }}">
+            <div class="card shadow h-100 text-dark bg-light">
+                
+                <!-- PHOTO -->
+                <div class="d-flex justify-content-center mt-3">
+                    <div class="rounded-circle border border-secondary"
+                         style="width: 90px; height: 90px; background-image: url('{% if joueur.photo_de_profile %}{{ joueur.photo_de_profile.url }}{% else %}{% static 'images/1.png' %}{% endif %}'); background-size: cover; background-position: center;">
+                    </div>
+                </div>
+
+                <!-- DESCRIPTION -->
+                <div class="card-body text-center">
+                    <h5 class="card-title">{{ joueur.nom_joueur }} {{ joueur.prenom_joueur }}</h5>
+                    <p class="card-text mb-1"><i class="fas fa-phone me-2"></i>{{ joueur.numero_telephone }}</p>
+
+                    <!-- STATUT -->
+                    {% if joueur.is_blocked %}
+                    <span class="badge bg-danger mb-2">Bloqué</span>
+                    {% else %}
+                    <span class="badge bg-success mb-2">Actif</span>
+                    {% endif %}
+
+                    <!-- FORMULAIRE ACTIONS -->
+                    <div class="d-flex gap-2 justify-content-center flex-wrap mt-2">
+                        <form method="POST" action="{% url 'gerer_joueur' joueur.id %}" class="d-flex gap-2 flex-wrap">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" id="action-{{ joueur.id }}" value="">
+
+                            <!-- SUPPRIMER -->
+                            <button type="submit" class="btn btn-outline-danger btn-sm"
+                                    onclick="document.getElementById('action-{{ joueur.id }}').value='supprimer'; return confirm('Supprimer ce joueur ?');">
+                                <i class="fas fa-trash"></i>
+                            </button>
+
+                            <!-- BLOQUER / DEBLOQUER -->
+                            {% if joueur.is_blocked %}
+                            <button type="submit" class="btn btn-outline-warning btn-sm"
+                                    onclick="document.getElementById('action-{{ joueur.id }}').value='debloquer'; return confirm('Débloquer ce joueur ?');">
+                                <i class="fas fa-unlock"></i>
+                            </button>
+                            {% else %}
+                            <button type="submit" class="btn btn-outline-secondary btn-sm"
+                                    onclick="document.getElementById('action-{{ joueur.id }}').value='bloquer'; return confirm('Bloquer ce joueur ?');">
+                                <i class="fas fa-ban"></i>
+                            </button>
+                            {% endif %}
+                        </form>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+</div>
+
+<!-- SCRIPT RECHERCHE DYNAMIQUE (Vanilla JS, fonctionnel) -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('searchJouer');
+    const joueurCards = document.querySelectorAll('.joueur-card');
+
+    searchInput.addEventListener('input', function() {
+        const query = this.value.toLowerCase().trim();
+        joueurCards.forEach(card => {
+            const numero = card.dataset.numero_telephone.toLowerCase();
+            const name = card.querySelector('.card-body').innerText.toLowerCase();
+            if (numero.includes(query) || name.includes(query)) {
+                card.style.display = '';
+            } else {
+                card.style.display = 'none';
+            }
+        });
+    });
+});
+</script>
+{% endblock listes_jouers %}

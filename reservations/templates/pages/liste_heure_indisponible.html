@@ -1,0 +1,75 @@
+{% extends "index.html" %}
+{% load static %}
+
+{% block heures_indisponible %}
+{% include "pages/ajouter_heure_indisponible.html" %}
+{% include "pages/modifier_heure_indisponible.html" %}
+
+<link rel="stylesheet" href="{% static 'css/heures_indisponibles.css' %}">
+
+<div class="liste_heures_indisponibles">
+    <table class="table table-bordered" id="heuresIndisponiblesTable">
+        <thead>
+            <tr>
+                <th>Heure Début</th>
+                <th>Heure Fin</th>
+                <th>Terrain</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for heure in heures_indisponibles %}
+        {% if heure.id %}
+        <tr>
+            <td>{{ heure.heure_debut }}</td>
+            <td>{{ heure.heure_fin }}</td>
+            <td>{{ heure.terrain.client.numero_telephone }}</td>
+            <td>{{ heure.terrain.nom_fr }} - {{ heure.terrain.nom_ar }}</td>
+            <td>
+                <a href="#" class="btn btn-warning btn-sm" data-toggle="modal" data-target="#modifierHeureModal{{ heure.id }}">Modifier</a>
+                <form action="{% url 'supprimer_heure_indisponible' heure.id %}" method="post" style="display:inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Êtes-vous sûr de vouloir supprimer cette heure indisponible ?');">Supprimer</button>
+                </form>
+            </td>
+        </tr>
+        {% else %}
+        <tr>
+            <td colspan="4" class="text-center text-danger">Erreur : Heure indisponible sans ID.</td>
+        </tr>
+        {% endif %}
+        {% empty %}
+        <tr>
+            <td colspan="4" class="text-center">Aucune heure indisponible enregistrée.</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+
+
+<script>
+    $('#searchCite').on('keyup', function() {
+        var value = $(this).val().toLowerCase();
+        $('#heuresIndisponiblesTable tr').each(function() {
+            var phoneNumber = $(this).find('td').eq(2).text().toLowerCase();
+            if (phoneNumber.indexOf(value) > -1) {
+                $(this).show();
+            } else {
+                $(this).hide();
+            }
+        });
+    });
+</script>
+{% endblock heures_indisponible %}
+
+
+
+
+{% block header_gestion_terrain %}
+<link rel="stylesheet" href="{% static 'css/header_Gestion_terrain.css' %}">
+<div class="header_gestion_terrain">
+    <input  id="searchCite"   type="search" placeholder="Rechercher du cite">
+</div>
+{% endblock header_gestion_terrain %}

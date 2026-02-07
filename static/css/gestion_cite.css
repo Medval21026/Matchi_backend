@@ -1,0 +1,136 @@
+.ListeCite{
+    width: 100%;
+    height: 70vh;
+    /* background-color: blue; */
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    overflow: scroll;
+}
+
+.site{
+    width: 20%;
+    height: 20vh;
+    background-repeat: no-repeat;
+    background-size: 100% 100%;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+    border-radius: 10px;
+    padding: 10px;
+    margin: 10px;
+}
+.site h5{
+    padding-bottom: 20%;
+    color: blue;
+}
+.site h4{
+    color: white;
+    font-weight: bold;
+}
+.formation_sur_cite{
+    position: fixed;
+    top: 12%;
+    left:50%;
+    width: 40%;
+    height: 70vh;
+    display: flex;
+    border-radius: 10px;
+    flex-direction: column;
+    background-color: #fff;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+.nom_cite{
+    width: 100%;
+    height: 10vh;
+    padding: 10px;
+    display: flex;
+    justify-content: space-between;
+    flex-direction: row;
+    align-items: center;
+    background-color:  rgb(16, 212, 68);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+    border-bottom: 1px solid black;
+}
+.nom_cite h1 {
+    color: white;
+}
+.attribut_cite{
+    width: 100%;
+    padding: 20px;
+    height: 40vh;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+}
+.les_options{
+    width: 60%;
+    height: 10vh;
+    display: flex;
+    justify-content: space-evenly;
+    align-items: center;
+}
+
+.photo_cite{
+    width: 100%;
+    height: 20vh;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-evenly;
+}
+.photo{
+    width: 30%;
+    height: 18vh;
+    background-repeat: no-repeat;
+    background-size: 100% 100%;
+}
+.ferme{
+    height: 7vh;
+    width: 30%;
+    background-color:black;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.75);
+    display: flex;
+    font-weight: bold;
+    justify-content: center;
+    align-items: center;
+    border-radius: 10px;
+
+}
+.ferme button{
+    background-color:black;
+    border: 1px solid black;
+
+    color: white;
+}
+.modifier{
+    height: 7vh;
+    width: 30%;
+    background-color:chocolate;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.75);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: 10px;
+
+}
+.modifier button{
+    background-color:chocolate;
+    border: 1px solid chocolate;
+    font-weight: bold;
+    color: white;
+}
+.suprimer{
+    height: 7vh;
+    width: 30%;
+    background-color:red;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.75);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: 10px;
+
+}
+.suprimer button{
+    background-color:red;
+    border: 1px solid red;
+    font-weight: bold;
+    color: white;
+}

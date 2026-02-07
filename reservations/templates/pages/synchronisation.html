@@ -1,0 +1,177 @@
+{% extends "index.html" %}
+{% load static %}
+
+{% block bodyGestion_proprietaire %}
+<div class="container mt-4">
+    <h1>Synchronisation des horaires occupés</h1>
+    <p class="text-muted">Cette page permet de synchroniser les horaires occupés depuis l'API Spring Boot vers la base de données.</p>
+
+    <div class="card mt-4">
+        <div class="card-body">
+            <h5 class="card-title">API Disponibilités</h5>
+            <p class="card-text">URL: <code>http://localhost:8080/api/disponibilites/horaires-occupes</code></p>
+            
+            <button id="btnSynchroniser" class="btn btn-primary btn-lg">
+                <i class="fas fa-sync-alt"></i> Synchroniser les horaires
+            </button>
+            
+            <button id="btnTesterApi" class="btn btn-secondary btn-lg ms-2">
+                <i class="fas fa-check-circle"></i> Tester l'API
+            </button>
+        </div>
+    </div>
+
+    <div id="resultSection" class="mt-4" style="display: none;">
+        <div class="card">
+            <div class="card-header" id="resultHeader">
+                Résultat
+            </div>
+            <div class="card-body">
+                <div id="resultContent"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="loadingSection" class="mt-4 text-center" style="display: none;">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Chargement...</span>
+        </div>
+        <p class="mt-2">Synchronisation en cours...</p>
+    </div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+$(document).ready(function() {
+    
+    // Bouton Synchroniser
+    $('#btnSynchroniser').on('click', function() {
+        if (!confirm('Voulez-vous synchroniser les horaires occupés depuis l\'API Spring Boot ?')) {
+            return;
+        }
+
+        // Afficher le loading
+        $('#loadingSection').show();
+        $('#resultSection').hide();
+        $('#btnSynchroniser').prop('disabled', true);
+
+        $.ajax({
+            url: "{% url 'synchroniser_horaires_occupes' %}",
+            type: "GET",
+            success: function(response) {
+                $('#loadingSection').hide();
+                $('#btnSynchroniser').prop('disabled', false);
+                $('#resultSection').show();
+
+                if (response.success) {
+                    $('#resultHeader').removeClass('bg-danger').addClass('bg-success text-white');
+                    $('#resultHeader').text('✓ Synchronisation réussie');
+                    
+                    let html = `
+                        <div class="alert alert-success">
+                            <h5>${response.message}</h5>
+                            <ul class="mb-0">
+                                <li><strong>Horaires insérés :</strong> ${response.inserted}</li>
+                                <li><strong>Erreurs :</strong> ${response.errors}</li>
+                            </ul>
+                        </div>
+                    `;
+
+                    if (response.errors_details && response.errors_details.length > 0) {
+                        html += `
+                            <div class="alert alert-warning mt-3">
+                                <h6>Détails des erreurs :</h6>
+                                <ul>
+                                    ${response.errors_details.map(err => `<li>${err}</li>`).join('')}
+                                </ul>
+                            </div>
+                        `;
+                    }
+
+                    $('#resultContent').html(html);
+                } else {
+                    $('#resultHeader').removeClass('bg-success').addClass('bg-danger text-white');
+                    $('#resultHeader').text('✗ Échec de la synchronisation');
+                    
+                    $('#resultContent').html(`
+                        <div class="alert alert-danger">
+                            <strong>Erreur :</strong> ${response.error}
+                        </div>
+                    `);
+                }
+            },
+            error: function(xhr) {
+                $('#loadingSection').hide();
+                $('#btnSynchroniser').prop('disabled', false);
+                $('#resultSection').show();
+                
+                $('#resultHeader').removeClass('bg-success').addClass('bg-danger text-white');
+                $('#resultHeader').text('✗ Erreur');
+                
+                let errorMsg = 'Erreur lors de la communication avec le serveur';
+                if (xhr.responseJSON && xhr.responseJSON.error) {
+                    errorMsg = xhr.responseJSON.error;
+                }
+                
+                $('#resultContent').html(`
+                    <div class="alert alert-danger">
+                        <strong>Erreur :</strong> ${errorMsg}
+                    </div>
+                `);
+            }
+        });
+    });
+
+    // Bouton Tester l'API
+    $('#btnTesterApi').on('click', function() {
+        $('#loadingSection').show();
+        $('#resultSection').hide();
+
+        $.ajax({
+            url: "http://localhost:8080/api/disponibilites/horaires-occupes",
+            type: "GET",
+            success: function(response) {
+                $('#loadingSection').hide();
+                $('#resultSection').show();
+                
+                $('#resultHeader').removeClass('bg-danger').addClass('bg-success text-white');
+                $('#resultHeader').text('✓ API accessible');
+                
+                let count = response.horairesOccupes ? response.horairesOccupes.length : 0;
+                
+                $('#resultContent').html(`
+                    <div class="alert alert-success">
+                        <h5>L'API Spring Boot est accessible !</h5>
+                        <p><strong>Nombre d'horaires trouvés :</strong> ${count}</p>
+                    </div>
+                    <div class="mt-3">
+                        <h6>Données brutes (aperçu) :</h6>
+                        <pre class="bg-light p-3 rounded" style="max-height: 300px; overflow-y: auto;">${JSON.stringify(response, null, 2)}</pre>
+                    </div>
+                `);
+            },
+            error: function(xhr) {
+                $('#loadingSection').hide();
+                $('#resultSection').show();
+                
+                $('#resultHeader').removeClass('bg-success').addClass('bg-danger text-white');
+                $('#resultHeader').text('✗ API inaccessible');
+                
+                $('#resultContent').html(`
+                    <div class="alert alert-danger">
+                        <h5>Impossible d'accéder à l'API Spring Boot</h5>
+                        <p><strong>Vérifiez que :</strong></p>
+                        <ul>
+                            <li>L'application Spring Boot est démarrée</li>
+                            <li>L'URL est correcte : <code>http://localhost:8080/api/disponibilites/horaires-occupes</code></li>
+                            <li>Le CORS est configuré correctement</li>
+                        </ul>
+                        <p class="mb-0"><strong>Erreur :</strong> ${xhr.status} - ${xhr.statusText}</p>
+                    </div>
+                `);
+            }
+        });
+    });
+});
+</script>
+{% endblock bodyGestion_proprietaire %}

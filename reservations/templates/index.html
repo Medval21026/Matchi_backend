@@ -1,0 +1,103 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MaTchi</title>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome CSS -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{% static 'css/indexx.css' %}">
+</head>
+<body class="bg-light">
+
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm fixed-top">
+        <div class="container-fluid">
+            <a class="navbar-brand text-warning fw-bold" href="#">MaTchi</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarOptions" aria-controls="navbarOptions" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarOptions">
+                <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
+                    <li class="nav-item">
+                        <a class="nav-link" id="page_acceuil" href="{% url 'page_acceuil' %}">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" id="gestion_terrain" href="{% url 'gestion_terrain' %}">Terrain</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" id="gestion_client" href="{% url 'gestion_client' %}">Client</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" id="gestion_proprietaire" href="{% url 'gestion_proprietaire' %}">Proprietaire</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" id="academie" href="{% url 'academie' %}">Academie</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" id="periode" href="{% url 'gestion_periode' %}">Periode</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" id="liste_heure_indisponible" href="{% url 'liste_heure_indisponible' %}">Heures Indis</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" id="listes_joueurs" href="{% url 'listes_joueurs' %}">Joueurs</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" id="liste_versions" href="{% url 'liste_versions' %}">Version</a>
+                    </li>
+                    <!-- <li class="nav-item">
+                        <a class="nav-link" id="synchronisation" href="{% url 'page_synchronisation' %}">Synchronisation</a>
+                    </li> -->
+                    <li class="nav-item">
+                        <a class="nav-link text-danger" href="{% url 'logout' %}" style="font-weight: bold;">
+                            <i class="fas fa-sign-out-alt"></i> Déconnexion
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+    <!-- Main Content -->
+    <div class="container-fluid" style="margin-top: 80px;margin-bottom: 80px;">
+        <div class="row">
+
+        {% block header_acceuil %}{% endblock header_acceuil %}
+
+            <div class="col-12">
+                {% block bodygestion_terrain %}{% endblock bodygestion_terrain %}
+                {% block listes_jouers %}{% endblock listes_jouers %}
+                {% block bodyGestion_client %}{% endblock bodyGestion_client %}
+                {% block bodyGestion_proprietaire %}{% endblock bodyGestion_proprietaire %}
+                {% block bodyAcceuil %}{% endblock bodyAcceuil %}
+                {% block bodyAcademie %}{% endblock bodyAcademie %}
+                {% block liste_periode %}{% endblock liste_periode %}
+                {% block heures_indisponible %}{% endblock heures_indisponible %}
+                {% block version %}{% endblock version %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            const activeLink = localStorage.getItem('activeLink');
+            if (activeLink) {
+                $('#' + activeLink).addClass('active fw-bold text-warning');
+            }
+            $('.nav-link').click(function(event) {
+                localStorage.setItem('activeLink', $(this).attr('id'));
+                $('.nav-link').removeClass('active fw-bold text-warning');
+                $(this).addClass('active fw-bold text-warning');
+            });
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,116 @@
+{% extends "index.html" %}
+{% load static %}
+{% block version %}
+<html lang="fr">
+<head>
+    <title>Gestion des Versions</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+
+    <div class="container1 ml-3 mr-4">
+        <h2>Liste des Versions</h2>
+        <button class="btn btn-primary my-2 ml-4" data-bs-toggle="modal" data-bs-target="#addModal">Ajouter</button>
+
+        <table class="table table-bordered">
+            <thead>
+                <tr><th>ID</th><th>Version</th><th>Actions</th></tr>
+            </thead>
+            <tbody id="versionTable">
+                {% for version in versions %}
+                <tr id="row-{{ version.id }}">
+                    <td>{{ version.id }}</td>
+                    <td>{{ version.versionNumber }}</td>
+                    <td>
+                        <button class="btn btn-warning btn-sm editBtn" data-id="{{ version.id }}" data-version="{{ version.versionNumber }}">Modifier</button>
+                        <button class="btn btn-danger btn-sm deleteBtn" data-id="{{ version.id }}">Supprimer</button>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Modal Ajouter -->
+    <div class="modal fade" id="addModal" tabindex="-1">
+        <div class="modal-dialog"><div class="modal-content">
+            <div class="modal-header"><h5 class="modal-title">Ajouter Version</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <input type="number"  class="form-control" id="addVersionNumber" placeholder="Entre number version">
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" id="saveAddBtn">Ajouter</button>
+            </div>
+        </div></div>
+    </div>
+
+    <!-- Modal Modifier -->
+    <div class="modal fade" id="editModal" tabindex="-1">
+        <div class="modal-dialog"><div class="modal-content">
+            <div class="modal-header"><h5 class="modal-title">Modifier Version</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="editId">
+                <input type="number" class="form-control" id="editVersionNumber">
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" id="saveEditBtn">Modifier</button>
+            </div>
+        </div></div>
+    </div>
+
+    <script>
+        // Ajouter
+        $('#saveAddBtn').click(function () {
+            let version = $('#addVersionNumber').val();
+            $.post("{% url 'ajouter_version' %}", {
+                versionNumber: version,
+                csrfmiddlewaretoken: '{{ csrf_token }}'
+            }, function (data) {
+                if (data.success) location.reload();
+            });
+        });
+
+        // Modifier
+        $('.editBtn').click(function () {
+            let id = $(this).data('id');
+            let version = $(this).data('version');
+            $('#editId').val(id);
+            $('#editVersionNumber').val(version);
+            new bootstrap.Modal(document.getElementById('editModal')).show();
+        });
+
+        $('#saveEditBtn').click(function () {
+            let id = $('#editId').val();
+            let version = $('#editVersionNumber').val();
+            $.post(`/versions/update/${id}/`, {
+                versionNumber: version,
+                csrfmiddlewaretoken: '{{ csrf_token }}'
+            }, function (data) {
+                if (data.success) location.reload();
+            });
+        });
+
+        // Supprimer
+        $('.deleteBtn').click(function () {
+            let id = $(this).data('id');
+            if (confirm("Confirmer la suppression ?")) {
+                $.post(`/versions/delete/${id}/`, {
+                    csrfmiddlewaretoken: '{{ csrf_token }}'
+                }, function (data) {
+                    if (data.success) {
+                        $('#row-' + id).remove();
+                    }
+                });
+            }
+        });
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
+{% endblock version %}

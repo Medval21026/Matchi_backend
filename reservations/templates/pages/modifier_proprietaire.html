@@ -1,0 +1,55 @@
+<div class="modal fade" id="editProprietaireModal" tabindex="-1"
+     aria-labelledby="editProprietaireModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+
+            <div class="modal-header" style="border-bottom:2px solid #49AD90;">
+                <h5 class="modal-title" id="editProprietaireModalLabel">
+                    Modifier le compte propriétaire
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+            <div class="modal-body">
+                <form id="editProprietaireForm" method="post">
+                    {% csrf_token %}
+
+                    <!-- ID caché -->
+                    <input type="hidden" id="edit_proprietaire_id" name="proprietaire_id">
+
+                    <div class="form-group">
+                        <label for="edit_nom">Nom</label>
+                        <input type="text" class="form-control" id="edit_nom" name="nom" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="edit_prenom">Prénom</label>
+                        <input type="text" class="form-control" id="edit_prenom" name="prenom" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="edit_telephone">Numéro de téléphone</label>
+                        <input type="text" class="form-control" id="edit_telephone" name="telephone" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="edit_password">Mot de passe</label>
+                        <input type="password" class="form-control" id="edit_password" name="password">
+                    </div>
+
+                    <div class="form-group form-check mt-2">
+                        <input type="checkbox" class="form-check-input" id="edit_isActive" name="isActive">
+                        <label class="form-check-label" for="edit_isActive">Actif</label>
+                    </div>
+
+                    <button type="submit"
+                            class="btn mt-3"
+                            style="background-color:#085f46;color:#fff">
+                        Modifier
+                    </button>
+                </form>
+            </div>
+
+        </div>
+    </div>
+</div>

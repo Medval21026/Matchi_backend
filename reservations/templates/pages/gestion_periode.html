@@ -1,0 +1,82 @@
+{% extends "index.html" %}
+{% load static %}
+
+{% block liste_periode %}
+{% include "pages/modifier_periode.html" %}
+
+<link rel="stylesheet" href="{% static 'css/gestion_periode.css' %}">
+
+<div class="container">
+    {% include "pages/ajouter_periode.html" %}
+    <div class="table-responsive mt-3">
+    <table class="table table-bordered table-striped table-hover align-middle" id="periodeTable">
+        <thead class="table-dark text-center">
+            <tr>
+                <th scope="col">Heure Début</th>
+                <th scope="col">Heure Fin</th>
+                <th scope="col">Prix</th>
+                <th scope="col">Client</th>
+                <th scope="col">Terrain</th>
+                <th scope="col">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for periode in periodes %}
+            {% if periode.id %}
+            <tr class="text-center">
+                <td>{{ periode.heure_debut }}</td>
+                <td>{{ periode.heure_fin }}</td>
+                <td><span class="badge bg-success">{{ periode.prix }} €</span></td>
+                <td>{{ periode.terrain.client.numero_telephone }}</td>
+                <td>{{ periode.terrain.nom_fr }} - {{ periode.terrain.nom_ar }}</td>
+                <td class="text-nowrap">
+                    <div class="d-flex justify-content-center gap-2">
+                        <button type="button" class="btn btn-warning btn-sm" 
+                                data-bs-toggle="modal" 
+                                data-bs-target="#modifierPeriodeModal{{ periode.id }}">
+                            Modifier
+                        </button>
+                        <form action="{% url 'supprimer_periode' periode.id %}" method="post">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-danger btn-sm" 
+                                    onclick="return confirm('Êtes-vous sûr de vouloir supprimer cette période ?');">
+                                Supprimer
+                            </button>
+                        </form>
+                    </div>
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="6" class="text-center text-danger">Erreur : Période sans ID.</td>
+            </tr>
+            {% endif %}
+            {% empty %}
+            <tr>
+                <td colspan="6" class="text-center">Aucune période disponible.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('searchCite');
+    searchInput.addEventListener('keyup', function() {
+        const value = this.value.toLowerCase();
+        document.querySelectorAll('#periodeTable tbody tr').forEach(row => {
+            const phone = row.querySelectorAll('td')[3];
+            if(phone && phone.textContent.toLowerCase().includes(value)) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+    });
+});
+</script>
+
+{% endblock liste_periode %}

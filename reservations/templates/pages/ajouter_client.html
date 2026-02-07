@@ -1,0 +1,45 @@
+<div class="container mt-4">
+    <!-- Bouton pour ouvrir le modal -->
+    <button type="button" class="btn text-white fw-bold" style="background-color:#49AD90;"
+            data-bs-toggle="modal" data-bs-target="#createClientModal">
+        Créer un compte client
+    </button>
+
+    <!-- Modal Bootstrap 5 -->
+    <div class="modal fade" id="createClientModal" tabindex="-1" aria-labelledby="createClientModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header" style="border-bottom:2px solid #49AD90;">
+                    <h5 class="modal-title" id="createClientModalLabel">Créer un compte client</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label for="nom" class="form-label">Nom</label>
+                            <input type="text" class="form-control" id="nom" name="nom" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="prenom" class="form-label">Prénom</label>
+                            <input type="text" class="form-control" id="prenom" name="prenom" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="numero_telephone" class="form-label">Numéro de téléphone</label>
+                            <input type="text" class="form-control" id="numero_telephone" name="numero_telephone" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="credie" class="form-label">Crédit</label>
+                            <input type="number" class="form-control" id="credie" name="credie" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="modepass_chiffre" class="form-label">Mot de passe</label>
+                            <input type="password" class="form-control" id="modepass_chiffre" name="modepass_chiffre" required>
+                        </div>
+                        <button type="submit" class="btn text-white" style="background-color:#49AD90;">Créer</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

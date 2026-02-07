@@ -1,0 +1,20 @@
+.liste_heures_indisponibles{
+    width:90%;
+    margin-left:5%;
+    margin-right:5%;
+    margin-top: 3%;
+    display: flex;
+    overflow: scroll;
+    /* background-color:red; */
+}
+.liste_heures_indisponibles::-webkit-scrollbar {
+    width: 1px;
+}
+
+.liste_heures_indisponibles::-webkit-scrollbar-track {
+    background: #fff; /* couleur de fond du défilement */
+}
+
+.liste_heures_indisponibles::-webkit-scrollbar-thumb {
+    background: #fff; 
+}

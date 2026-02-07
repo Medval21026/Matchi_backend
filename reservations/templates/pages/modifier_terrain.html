@@ -1,0 +1,235 @@
+<div class="container mt-3">
+    <div class="modal fade" id="modifierCiteModal" tabindex="-1" aria-labelledby="modifierCiteModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content text-dark" style="max-width:790px;">
+
+                <!-- HEADER -->
+                <div class="modal-header border-bottom border-success">
+                    <h5 class="modal-title" id="modifierCiteModalLabel">Modifier Cite</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+
+                <!-- BODY -->
+                <div class="modal-body">
+                    <form id="modifierCiteForm" action="" method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        <input type="hidden" id="terrain_id" name="terrain_id" value="{{ terrain.id }}">
+
+                        <!-- STEP 1 -->
+                        <div class="stepe" id="stepe1">
+                            <div class="row g-2">
+                                <div class="col-6">
+                                    <div class="mb-2">
+                                        <label class="form-label">Nom (Français)</label>
+                                        <input type="text" class="form-control" id="nom_fr_modifier" name="nom_fr" value="{{ terrain.nom_fr }}" required>
+                                    </div>
+                                    <div class="mb-2">
+                                        <label class="form-label">Nom (Arabe)</label>
+                                        <input type="text" class="form-control" id="nom_ar_modifier" name="nom_ar" value="{{ terrain.nom_ar }}" required>
+                                    </div>
+                                    <div class="mb-2">
+                                        <label class="form-label">Lieu (Français)</label>
+                                        <input type="text" class="form-control" id="lieu_fr_modifier" name="lieu_fr" value="{{ terrain.lieu_fr }}" required>
+                                    </div>
+                                </div>
+
+                                <div class="col-6">
+                                    <div class="mb-2">
+                                        <label class="form-label">Lieu (Arabe)</label>
+                                        <input type="text" class="form-control" id="lieu_ar_modifier" name="lieu_ar" value="{{ terrain.lieu_ar }}" required>
+                                    </div>
+                                    <div class="mb-2">
+                                        <label class="form-label">Longitude</label>
+                                        <input type="number" step="any" class="form-control" id="longitude_modifier" name="longitude" value="{{ terrain.longitude }}" required>
+                                    </div>
+                                    <div class="mb-2">
+                                        <label class="form-label">Latitude</label>
+                                        <input type="number" step="any" class="form-control" id="latitude_modifier" name="latitude" value="{{ terrain.latitude }}" required>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- STEP 2 -->
+                        <div class="stepe d-none" id="stepe2">
+                            <div class="row g-2">
+                                <div class="col-6">
+                                    <div class="mb-2">
+                                        <label class="form-label">Photo 1</label>
+                                        <input type="file" class="form-control" id="photo1_modifier" name="photo1">
+                                    </div>
+                                    <div class="mb-2">
+                                        <label class="form-label">Photo 2</label>
+                                        <input type="file" class="form-control" id="photo2_modifier" name="photo2">
+                                    </div>
+                                    <div class="mb-2">
+                                        <label class="form-label">Photo 3</label>
+                                        <input type="file" class="form-control" id="photo3_modifier" name="photo3">
+                                    </div>
+                                </div>
+
+                                <div class="col-6">
+                                    <div class="mb-2">
+                                        <label class="form-label">Nombre de Joueurs</label>
+                                        <input type="number" class="form-control" id="nombre_joueur_modifier" name="nombre_joueur" value="{{ terrain.nombre_joueur }}" required>
+                                    </div>
+                                    <div class="mb-2">
+                                        <label class="form-label">Prix par Heure</label>
+                                        <input type="number" class="form-control" id="prix_par_heure_modifier" name="prix_par_heure" value="{{ terrain.prix_par_heure }}" required>
+                                    </div>
+                                    <div class="mb-2">
+                                        <label class="form-label">Client</label>
+                                        <input type="number" class="form-control" id="client_modifier" name="client" value="{{ terrain.client.numero_telephone }}" required>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- STEP 3 -->
+                        <div class="stepe d-none" id="stepe3">
+                    <div class="row">
+                        <div class="col-6">
+                            <div class="form-group mb-1">
+                                <label for="parking">Parking</label><br>
+                                <input type="radio" id="parking_true_modifier" name="parking" value="True" {% if terrain.parking %}checked{% endif %}> Oui<br>
+                                <input type="radio" id="parking_false_modifier" name="parking" value="False" {% if not terrain.parking %}checked{% endif %}> Non
+                            </div>
+                            <div class="form-group mb-1">
+                                <label for="siffler">siffler</label><br>
+                                <input type="radio" id="siffler_true_modifier" name="siffler" value="True" {% if terrain.siffler %}checked{% endif %}> Oui<br>
+                                <input type="radio" id="siffler_false_modifier" name="siffler" value="False" {% if not terrain.siffler %}checked{% endif %}> Non
+                            </div>
+                            <div class="form-group mb-1">
+                                <label for="ballon_disponible">Ballon Disponible</label><br>
+                                <input type="radio" id="ballon_disponible_true_modifier" name="ballon_disponible" value="True" {% if terrain.ballon_disponible %}checked{% endif %}> Oui<br>
+                                <input type="radio" id="ballon_disponible_false_modifier" name="ballon_disponible" value="False" {% if not terrain.ballon_disponible %}checked{% endif %}> Non
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="form-group mb-1">
+                                <label for="maillot_disponible">Maillot Disponible</label><br>
+                                <input type="radio" id="maillot_disponible_true_modifier" name="maillot_disponible" value="True" {% if terrain.maillot_disponible %}checked{% endif %}> Oui<br>
+                                <input type="radio" id="maillot_disponible_false_modifier" name="maillot_disponible" value="False" {% if not terrain.maillot_disponible %}checked{% endif %}> Non
+                            </div>
+                            <div class="form-group mb-1">
+                                <label for="eclairage_disponible">Éclairage Disponible</label><br>
+                                <input type="radio" id="eclairage_disponible_true_modifier" name="eclairage_disponible" value="True" {% if terrain.eclairage_disponible %}checked{% endif %}> Oui<br>
+                                <input type="radio" id="eclairage_disponible_false_modifier" name="eclairage_disponible" value="False" {% if not terrain.eclairage_disponible %}checked{% endif %}> Non
+                            </div>
+                            <div class="form-group mb-1">
+                                <label for="gazon_artificiel">Gazon Artificiel</label><br>
+                                <input type="radio" id="gazon_artificiel_true_modifier" name="gazon_artificiel" value="True" {% if terrain.gazon_artificiel %}checked{% endif %}> Oui<br>
+                                <input type="radio" id="gazon_artificiel_false_modifier" name="gazon_artificiel" value="False" {% if not terrain.gazon_artificiel %}checked{% endif %}> Non
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                        <!-- STEP 4 -->
+                        <div class="stepe d-none" id="stepe4">
+                            <div class="row g-2">
+                                <div class="col-6">
+                                    <div class="mb-2">
+                                        <label class="form-label">Heure d'ouverture</label>
+                                        <input type="time" class="form-control" name="heure_ouverture" value="{{ terrain.heure_ouverture|default_if_none:'' }}">
+                                    </div>
+                                    <div class="mb-2">
+                                        <label class="form-label">Heure de fermeture</label>
+                                        <input type="time" class="form-control" name="heure_fermeture" value="{{ terrain.heure_fermeture|default_if_none:'' }}">
+                                    </div>
+                                    <div class="mb-2">
+                                        <label class="form-label">Wilaye</label>
+                                        <select class="form-select" id="Wilaye_modifier" name="Wilaye" required>
+                                            <option value="">Sélectionnez une wilaya</option>
+                                            {% for wilaye in wilayes %}
+                                            <option value="{{ wilaye.code_wilaye }}" {% if terrain.wilaye_id == wilaye.code_wilaye %}selected{% endif %}>
+                                                {{ wilaye.nom_wilaye_fr }} - {{ wilaye.nom_wilaye_Ar }}
+                                            </option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="col-6">
+                                    <div class="mb-2">
+                                        <label class="form-label">Moughataa</label>
+                                        <select class="form-select" id="Moughataa_modifier" name="Moughataa" required>
+                                            <option value="">Sélectionnez un moughataa</option>
+                                            {% for moughataa in moughataa %}
+                                            <option value="{{ moughataa.id }}" {% if terrain.moughataa_id == moughataa.id %}selected{% endif %}>
+                                                {{ moughataa.nom_fr }} - {{ moughataa.nom_ar }}
+                                            </option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div class="form-group mb-1">
+                                        <label for="eau">Eau</label><br>
+                                        <input type="radio" id="eau_true_modifier" name="eau" value="True" {% if terrain.eau %}checked{% endif %}> Oui<br>
+                                        <input type="radio" id="eau_false_modifier" name="eau" value="False" {% if not terrain.eau %}checked{% endif %}> Non
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- NAV -->
+                        <div class="d-flex justify-content-between mt-3">
+                            <button type="button" id="prevBtN" class="btn btn-secondary d-none">Précédent</button>
+                            <button type="button" id="nextBtN" class="btn btn-primary">Suivant</button>
+                        </div>
+
+                        <!-- FOOTER -->
+                        <div class="modal-footer">
+                            <button type="submit" id="submitBtn" class="btn btn-success">Modifier</button>
+                        </div>
+
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        let currentStep = 1;
+        const totalSteps = 4;
+        const steps = document.querySelectorAll(".stepe");
+        const prevBtn = document.getElementById("prevBtN");
+        const nextBtn = document.getElementById("nextBtN");
+
+        function showStep(step) {
+            steps.forEach((el, index) => {
+                el.classList.toggle("d-none", index !== step - 1);
+            });
+            updateButtons();
+        }
+
+        function updateButtons() {
+            prevBtn.classList.toggle("d-none", currentStep === 1);
+            nextBtn.classList.toggle("d-none", currentStep === totalSteps);
+            submitBtn.classList.toggle("d-none", currentStep !== totalSteps);
+        }
+
+        if (nextBtn) {
+            nextBtn.addEventListener("click", () => {
+                if (currentStep < totalSteps) {
+                    currentStep++;
+                    showStep(currentStep);
+                }
+            });
+        }
+
+        if (prevBtn) {
+            prevBtn.addEventListener("click", () => {
+                if (currentStep > 1) {
+                    currentStep--;
+                    showStep(currentStep);
+                }
+            });
+        }
+
+        showStep(currentStep);
+    });
+
+</script>
+

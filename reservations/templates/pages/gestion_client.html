@@ -1,0 +1,185 @@
+{% extends "index.html" %}
+{% load static %}
+
+
+
+{% block bodyGestion_client %}
+<div class="container mt-4">
+    <h3 class="mb-3">Liste des clients</h3>
+    <div class="ajouter_client mb-3">
+        {% include "pages/ajouter_client.html" %}
+    </div>
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div class="col-12 col-md-6 col-lg-3">
+            <input id="searchClient" type="search" class="form-control" placeholder="Rechercher par téléphone">
+        </div>
+
+    </div>
+
+    <!-- Ajouter client -->
+
+    
+
+    <div class="row g-3" id="clientsContainer">
+        {% for client in clients %}
+        <div class="col-sm-6 col-md-4 col-lg-3 client-card"
+             data-phone="{{ client.numero_telephone }}"
+             id="client{{ client.id }}">
+            <div class="card bg-dark text-white shadow h-100">
+
+                <div class="card-body">
+                    <p><b>Nom :</b> {{ client.nom }}</p>
+                    <p><b>Crédit :</b> {{ client.credie }}</p>
+                    <p><b>Tél :</b> {{ client.numero_telephone }}</p>
+
+                    <form method="post"
+                          action="{% url 'ajouter_credits' client.id %}"
+                          class="d-flex gap-2">
+                        {% csrf_token %}
+                        <input type="number"
+                               name="montant"
+                               class="form-control form-control-sm"
+                               placeholder="Crédit"
+                               required>
+                        <button class="btn btn-success btn-sm">
+                            <i class="fas fa-plus"></i>
+                        </button>
+                    </form>
+                </div>
+
+                <div class="card-footer d-flex justify-content-between">
+                    <!-- Bouton modifier -->
+                    <button class="btn btn-primary btn-sm"
+                            data-bs-toggle="modal"
+                            data-bs-target="#editClientModal"
+                            data-id="{{ client.id }}"
+                            data-nom="{{ client.nom }}"
+                            data-prenom="{{ client.prenom }}"
+                            data-credie="{{ client.credie }}"
+                            data-telephone="{{ client.numero_telephone }}">
+                        Modifier
+                    </button>
+
+                    <!-- Bouton supprimer -->
+                    <button class="btn btn-danger btn-sm"
+                            onclick="deleteClient('{{ client.id }}')">
+                        Supprimer
+                    </button>
+                </div>
+
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- MODAL MODIFIER CLIENT -->
+<div class="modal fade" id="editClientModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+
+            <div class="modal-header">
+                <h5 class="modal-title">Modifier client</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+
+            <form id="editClientForm">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <input type="hidden" id="edit_id" name="client_id">
+
+                    <input class="form-control mb-2" id="edit_nom" name="nom" placeholder="Nom" required>
+                    <input class="form-control mb-2" id="edit_prenom" name="prenom" placeholder="Prénom" required>
+                    <input class="form-control mb-2" id="edit_credie" name="credie" type="number" placeholder="Crédit" required>
+                    <input class="form-control mb-2" id="edit_telephone" name="numero_telephone" placeholder="Téléphone" required>
+                    <input class="form-control mb-2" id="edit_modepass_chiffre" name="modepass_chiffre" type="password" placeholder="Mot de passe">
+                </div>
+
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" data-bs-dismiss="modal" type="button">Annuler</button>
+                    <button class="btn btn-success" type="submit">Enregistrer</button>
+                </div>
+            </form>
+
+        </div>
+    </div>
+</div>
+
+<!--############################################# SCRIPTS ###########################################################-->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+$(document).ready(function() {
+
+    // ===== RECHERCHE CLIENT =====
+    $('#searchClient').on('input', function () {
+        let val = $(this).val().toLowerCase().trim();
+        $('.client-card').each(function () {
+            let phone = String($(this).data('phone')).toLowerCase();
+            $(this).toggle(phone.includes(val));
+        });
+    });
+
+
+    // ===== MODAL MODIFIER =====
+    let editModal = document.getElementById('editClientModal');
+    editModal.addEventListener('show.bs.modal', function (event) {
+        let button = event.relatedTarget;
+
+        document.getElementById('edit_id').value = button.getAttribute('data-id');
+        document.getElementById('edit_nom').value = button.getAttribute('data-nom');
+        document.getElementById('edit_prenom').value = button.getAttribute('data-prenom');
+        document.getElementById('edit_credie').value = button.getAttribute('data-credie');
+        document.getElementById('edit_telephone').value = button.getAttribute('data-telephone');
+        document.getElementById('edit_modepass_chiffre').value = '';
+    });
+
+    // ===== SUBMIT MODIFIER CLIENT (AJAX) =====
+    $('#editClientForm').on('submit', function (e) {
+        e.preventDefault();
+
+        $.ajax({
+            url: '{% url "modifier_client" %}',
+            type: 'POST',
+            data: {
+                client_id: $('#edit_id').val(),
+                nom: $('#edit_nom').val(),
+                prenom: $('#edit_prenom').val(),
+                credie: $('#edit_credie').val(),
+                numero_telephone: $('#edit_telephone').val(),
+                modepass_chiffre: $('#edit_modepass_chiffre').val(),
+                csrfmiddlewaretoken: '{{ csrf_token }}'
+            },
+            success: function () {
+                location.reload();
+            },
+            error: function () {
+                alert('Erreur lors de la modification du client.');
+            }
+        });
+    });
+
+});
+
+// ===== SUPPRIMER CLIENT =====
+function deleteClient(clientId) {
+    if (!confirm('Êtes-vous sûr de vouloir supprimer ce client ?')) return;
+
+    $.ajax({
+        url: '{% url "supprimer_client" %}',
+        type: 'POST',
+        data: {
+            client_id: clientId,
+            csrfmiddlewaretoken: '{{ csrf_token }}'
+        },
+        success: function () {
+            $('#client' + clientId).remove();
+        },
+        error: function () {
+            alert('Erreur lors de la suppression du client.');
+        }
+    });
+}
+</script>
+
+{% endblock bodyGestion_client %}

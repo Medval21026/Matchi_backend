@@ -1,0 +1,39 @@
+<div class="modal fade" id="editClientModal" tabindex="-1" role="dialog" aria-labelledby="editClientModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content" >
+            <div class="modal-header" style="border-bottom:2px solid #49AD90;">
+                <h5 class="modal-title" id="editClientModalLabel">Modifier le compte client</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="editClientForm" method="post">
+                    {% csrf_token %}
+                    <input type="hidden" id="edit_client_id" name="client_id">
+                    <div class="form-group">
+                        <label for="edit_nom">Nom</label>
+                        <input type="text" class="form-control" id="edit_nom" name="nom" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit_prenom">Prénom</label>
+                        <input type="text" class="form-control" id="edit_prenom" name="prenom" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit_credie">credie</label>
+                        <input type="number" class="form-control" id="edit_credie" name="credie" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit_numero_telephone">Numéro de téléphone</label>
+                        <input type="text" class="form-control" id="edit_numero_telephone" name="numero_telephone" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit_modepass_chiffre">Mot de passe</label>
+                        <input type="password" class="form-control" id="edit_modepass_chiffre" name="modepass_chiffre">
+                    </div>
+                    <button type="submit" class="btn" style="background-color:#49AD90;color:#fff">Modifier</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

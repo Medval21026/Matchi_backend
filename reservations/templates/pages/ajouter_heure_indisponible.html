@@ -1,0 +1,36 @@
+<button type="button" class="btn btn-danger mt-2 ml-3" style="width:15%" data-toggle="modal" data-target="#ajouterIndisponibleModal">
+    Ajouter une Indisponibilité
+</button>
+
+<div class="modal fade" id="ajouterIndisponibleModal" tabindex="-1" role="dialog" aria-labelledby="ajouterIndisponibleModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content" style="color:black;font-weight:400;">
+            <div class="modal-header" style="border-bottom:2px solid #49AD90;">
+                <h5 class="modal-title" id="ajouterIndisponibleModalLabel">Ajouter une Indisponibilité</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="ajouterIndisponibleForm" action="{% url 'liste_heure_indisponible' %}" method="post">
+                    {% csrf_token %}
+                    <div class="form-group mb-1">
+                        <label for="client">Client</label>
+                        <input type="number" class="form-control" id="client" name="client" placeholder="Téléphone du client" required>
+                    </div>
+                    <div class="form-group mb-1">
+                        <label for="heure_debut">Heure de Début</label>
+                        <input type="time" class="form-control" id="heure_debut" name="heure_debut" required>
+                    </div>
+                    <div class="form-group mb-1">
+                        <label for="heure_fin">Heure de Fin</label>
+                        <input type="time" class="form-control" id="heure_fin" name="heure_fin" required>
+                    </div>
+                    <div class="Modifier_cite mt-2 d-flex justify-content-between">
+                        <button type="submit" class="btn btn-success">Ajouter</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

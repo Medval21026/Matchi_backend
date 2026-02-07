@@ -1,0 +1,81 @@
+<div class="container mt-3">
+    <div class="modal fade" id="modifierAcademieModal" tabindex="-1" role="dialog" aria-labelledby="modifierAcademieModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content" style="width:850px;color:black;font-weight:400;margin-left:-25%">
+                <div class="modal-header" style="border-bottom:2px solid #49AD90;">
+                    <h5 class="modal-title" id="modifierAcademieModalLabel">Modifier Académie</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form id="modifierAcademieForm" action="" method="post" class="row" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        <input type="hidden" id="academie_id" name="academie_id" value="{{ academie.id }}">
+
+                        <div class="col-6">
+                            <div class="form-group mb-1">
+                                <label for="name_fr">Nom (Français)</label>
+                                <input type="text" class="form-control" id="name_fr_modifier" name="name_fr" value="{{ academie.name_fr }}" required>
+                            </div>
+                            <div class="form-group mb-1">
+                                <label for="name_ar">Nom (Arabe)</label>
+                                <input type="text" class="form-control" id="name_ar_modifier" name="name_ar" value="{{ academie.name_ar }}" required>
+                            </div>
+                            <div class="form-group mb-1">
+                                <label for="location_fr">Lieu (Français)</label>
+                                <input type="text" class="form-control" id="location_fr_modifier" name="location_fr" value="{{ academie.location_fr }}" required>
+                            </div>
+                            <div class="form-group mb-1">
+                                <label for="location_ar">Lieu (Arabe)</label>
+                                <input type="text" class="form-control" id="location_ar_modifier" name="location_ar" value="{{ academie.location_ar }}" required>
+                            </div>
+                            <div class="form-group mb-1">
+                                <label for="photo">Photo</label>
+                                <input type="file" class="form-control-file" id="photo_modifier" name="photo">
+                            </div>
+                        </div>
+
+                        <div class="col-6">
+                            <div class="form-group mb-1">
+                                <label for="longitude">Longitude</label>
+                                <input type="number" step="0.000000000000001" class="form-control" id="longitude_modifier" name="longitude" value="{{ academie.longitude }}" required>
+                            </div>
+                            <div class="form-group mb-1">
+                                <label for="latitude">Latitude</label>
+                                <input type="number" step="0.000000000000001" class="form-control" id="latitude_modifier" name="latitude" value="{{ academie.latitude }}" required>
+                            </div>
+                            <div class="form-group mb-1">
+                                <label for="age_group">Groupe d'âge</label>
+                                <input type="text" class="form-control" id="age_group_modifier" name="age_group" value="{{ academie.age_group }}" required>
+                            </div>
+                            
+                            <div class="form-group mb-1">
+                                <label for="Wilaye">Wilaye</label>
+                                <select class="form-control" id="Wilaye_modifier" name="Wilaye" required>
+                                    <option value="">Sélectionnez une wilaya</option>
+                                    {% for wilaye in wilayes %}
+                                        <option value="{{ wilaye.code_wilaye }}" {% if academie.wilaye_id == wilaye.code_wilaye %}selected{% endif %}>{{ wilaye.nom_wilaye_fr }} - {{ wilaye.nom_wilaye_Ar }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="form-group mb-1">
+                                <label for="Moughataa">Moughataa</label>
+                                <select class="form-control" id="Moughataa_modifier" name="Moughataa" required>
+                                    <option value="">Sélectionnez un moughataa</option>
+                                    {% for moughataa in moughataa %}
+                                        <option value="{{ moughataa.id }}" {% if academie.moughataa_id == moughataa.id %}selected{% endif %}>{{ moughataa.nom_fr }} - {{ moughataa.nom_ar }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="Modifier_academie mt-2 ml-3">
+                            <button class="btn" type="submit" style="background-color:#49AD90;color:white;">Modifier</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

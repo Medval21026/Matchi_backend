@@ -1,0 +1,218 @@
+{% extends "index.html" %}
+{% load static %}
+{% block bodyGestion_proprietaire %}
+<div class="container mt-4 ">
+    <h1>Liste des propriétaires</h1>
+    <button type="button" class="btn text-white fw-bold" style="background-color:#49AD90;"
+            data-bs-toggle="modal" data-bs-target="#createProprietaireModal">
+        Créer un compte propriétaire
+    </button>
+
+    <!-- Inclure le modal depuis ton fichier -->
+    <div class="ajouter_proprietaire mb-3">
+        {% include "pages/ajouter_proprietaire.html" %}
+        {% include "pages/modifier_proprietaire.html" %}
+    </div>
+    
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div class="col-12 col-md-6 col-lg-3">
+            <input id="searchProprietaire" type="search" class="form-control" placeholder="Rechercher par téléphone">
+        </div>
+    </div>
+    
+    <div class="row d-flex flex-wrap g-3">
+        {% for proprietaire in proprietaires %}
+        <div class="col-sm-6 col-md-4 col-lg-3 proprietaire-card"
+             data-phone="{{ proprietaire.telephone }}"
+             data-nom="{{ proprietaire.nom }}"
+             data-prenom="{{ proprietaire.prenom }}"
+             id="proprietaire{{ proprietaire.id }}">
+            <div class="card bg-dark text-white shadow h-100">
+                <div class="card-body">
+                    <p><b>Nom :</b> {{ proprietaire.nom }}</p>
+                    <p><b>Prénom :</b> {{ proprietaire.prenom }}</p>
+                    <p><b>Téléphone :</b> {{ proprietaire.telephone }}</p>
+                    <p><b>Actif :</b> {{ proprietaire.isActive }}</p>
+                </div>
+                <div class="card-footer d-flex justify-content-between">
+                    <button class="btn btn-primary btn-sm"
+        data-bs-toggle="modal"
+                        data-bs-target="#editProprietaireModal"
+                        data-id="{{ proprietaire.id }}"
+                        data-nom="{{ proprietaire.nom }}"
+                        data-prenom="{{ proprietaire.prenom }}"
+                        data-telephone="{{ proprietaire.telephone }}"
+                        data-active="{{ proprietaire.isActive }}">
+                    Modifier
+                </button>
+
+                    <button class="btn btn-danger btn-sm btn-supprimer-proprietaire"
+                            data-id="{{ proprietaire.id }}"
+                            data-nom="{{ proprietaire.nom }}"
+                            data-prenom="{{ proprietaire.prenom }}">
+                        Supprimer
+                    </button>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        $(document).ready(function () {
+            // ===== RECHERCHE PROPRIETAIRE =====
+            $('#searchProprietaire').on('input', function () {
+                let val = $(this).val().toLowerCase().trim();
+                $('.proprietaire-card').each(function () {
+                    let phone = String($(this).data('phone')).toLowerCase();
+                    let nom = String($(this).data('nom')).toLowerCase();
+                    let prenom = String($(this).data('prenom')).toLowerCase();
+                    
+                    // Afficher la carte si le texte recherché correspond au téléphone, nom ou prénom
+                    $(this).toggle(phone.includes(val) || nom.includes(val) || prenom.includes(val));
+                });
+            });
+            
+            $('#createProprietaireForm').on('submit', function (e) {
+            e.preventDefault();
+
+            // Récupération des valeurs du formulaire
+            let data = {
+                nom: $('#nom').val(),
+                prenom: $('#prenom').val(),
+                telephone: $('#telephone').val(),
+                password: $('#password').val(),
+                isActive: $('#isActive').is(':checked') ? 'on' : '' // envoyer "on" comme une checkbox classique
+            };
+
+            $.ajax({
+                url: "{% url 'ajouter_proprietaire' %}",
+                type: "POST",
+                data: {
+                    ...data,
+                    csrfmiddlewaretoken: '{{ csrf_token }}'
+                },
+                success: function (response) {
+                    if (response.success) {
+                        location.reload();
+                    } else {
+                        alert(response.error || "Erreur lors de la création du propriétaire.");
+                    }
+                },
+                error: function (xhr) {
+                    // Affiche l'erreur si elle est renvoyée en JSON
+                    let response = xhr.responseJSON;
+                    if (response && response.error) {
+                        alert(response.error);
+                    } else {
+                        alert('Erreur lors de la création du propriétaire.');
+                    }
+                }
+            });
+        });
+    });
+    </script>
+    <script>
+        $(document).ready(function () {
+            $('#editProprietaireModal').on('show.bs.modal', function (event) {
+                let button = $(event.relatedTarget);
+        
+                // Récupérer les données depuis les attributs data-*
+                let id = button.data('id');
+                let nom = button.data('nom');
+                let prenom = button.data('prenom');
+                let telephone = button.data('telephone');
+                let active = button.data('active');
+        
+                // Remplir les champs du formulaire
+                $('#edit_proprietaire_id').val(id);
+                $('#edit_nom').val(nom);
+                $('#edit_prenom').val(prenom);
+                $('#edit_telephone').val(telephone);
+                
+                // Gérer la checkbox isActive (convertir en booléen si nécessaire)
+                if (active === true || active === 'true' || active === 'True' || active === 1 || active === '1') {
+                    $('#edit_isActive').prop('checked', true);
+                } else {
+                    $('#edit_isActive').prop('checked', false);
+                }
+                
+                // Réinitialiser le champ mot de passe
+                $('#edit_password').val('');
+            });
+        
+            $('#editProprietaireForm').on('submit', function (e) {
+                e.preventDefault();
+        
+                $.ajax({
+                    url: "{% url 'modifier_proprietaire' %}",
+                    type: "POST",
+                    data: {
+                        proprietaire_id: $('#edit_proprietaire_id').val(),
+                        nom: $('#edit_nom').val(),
+                        prenom: $('#edit_prenom').val(),
+                        telephone: $('#edit_telephone').val(),
+                        password: $('#edit_password').val(),
+                        isActive: $('#edit_isActive').is(':checked') ? 'on' : '',
+                        csrfmiddlewaretoken: '{{ csrf_token }}'
+                    },
+                    success: function (response) {
+                        if (response.success) {
+                            $('#editProprietaireModal').modal('hide');
+                            location.reload();
+                        } else {
+                            alert(response.error || "Erreur lors de la modification du propriétaire.");
+                        }
+                    },
+                    error: function (xhr) {
+                        let response = xhr.responseJSON;
+                        if (response && response.error) {
+                            alert(response.error);
+                        } else {
+                            alert('Erreur lors de la modification du propriétaire.');
+                        }
+                    }
+                });
+            });
+            
+            // Gestion de la suppression
+            $('.btn-supprimer-proprietaire').on('click', function (e) {
+                e.preventDefault();
+                let button = $(this);
+                let proprietaireId = button.data('id');
+                let nom = button.data('nom');
+                let prenom = button.data('prenom');
+                
+                // Demander confirmation
+                if (confirm(`Êtes-vous sûr de vouloir supprimer le propriétaire ${nom} ${prenom} ?`)) {
+                    $.ajax({
+                        url: "{% url 'supprimer_proprietaire' %}",
+                        type: "POST",
+                        data: {
+                            proprietaire_id: proprietaireId,
+                            csrfmiddlewaretoken: '{{ csrf_token }}'
+                        },
+                        success: function (response) {
+                            if (response.success) {
+                                location.reload();
+                            } else {
+                                alert(response.error || "Erreur lors de la suppression du propriétaire.");
+                            }
+                        },
+                        error: function (xhr) {
+                            let response = xhr.responseJSON;
+                            if (response && response.error) {
+                                alert(response.error);
+                            } else {
+                                alert('Erreur lors de la suppression du propriétaire.');
+                            }
+                        }
+                    });
+                }
+            });
+        });
+    </script>
+    
+    
+{% endblock bodyGestion_proprietaire %}

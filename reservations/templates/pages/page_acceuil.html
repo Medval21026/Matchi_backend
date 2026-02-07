@@ -1,0 +1,86 @@
+{% extends "index.html" %}
+{% load static %}
+{% block bodyAcceuil %}
+<link rel="stylesheet" href="{% static 'css/page_acceuil.css' %}">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="{% static 'js/page_acceuil.js' %}"></script>
+
+
+<div class="container-fluid mt-3">
+
+    <!-- Statistiques principales -->
+    <div class="row g-3">
+        <div class="col-md-4">
+            <div class="card text-center shadow-sm">
+                <div class="card-body">
+                    <h6 class="card-title">Totales de Clients</h6>
+                    <p class="card-text fs-4"><i class="fas fa-user text-warning me-2"></i> {{ nombre_clients }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-center shadow-sm">
+                <div class="card-body">
+                    <h6 class="card-title">Totales de Terrains</h6>
+                    <p class="card-text fs-4"><i class="fa fa-futbol text-warning me-2"></i> {{ nombre_terrains }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-center shadow-sm">
+                <div class="card-body">
+                    <h6 class="card-title">Totales de Joueurs</h6>
+                    <p class="card-text fs-4"><i class="fas fa-users text-warning me-2"></i> {{ nombre_jouers }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Graphiques -->
+  <div class="row g-3 mt-3">
+    <div class="col-lg-6">
+        <div class="card shadow-sm p-3" style="height: 60vh;">
+            <h6 class="text-center mb-3">Terrains par Wilaya</h6>
+            <canvas id="citesParWilayaChart" style="height: 40vh; width: 100%;"></canvas>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card shadow-sm p-3 overflow-auto" style="height: 60vh;">
+            <h6 class="text-center mb-3">Réservations par Terrain</h6>
+            <div id="charts-container" style="height: 100%;"></div>
+        </div>
+    </div>
+
+</div>
+
+
+</div>
+
+<!-- Données JSON pour JS -->
+<script type="application/json" id="terrainsParWilayaData">
+    {{ terrains_par_wilaya_json|safe }}
+</script>
+<script type="application/json" id="reservationsParClientData">
+    {{ Reservations_par_Client_json|safe }}
+</script>
+
+{% endblock bodyAcceuil %}
+{% block header_acceuil %}
+<link rel="stylesheet" href="{% static 'css/header_Gestion_terrain.css' %}">
+
+<div class="container-fluid px-3">
+    <div class="row align-items-center">
+        <div class="col-md-6 col-lg-4 ms-auto">
+            <div class="input-group shadow-sm">
+                <input
+                    id="phoneNumber"
+                    type="search"
+                    class="form-control"
+                    placeholder="Recherche par numéro du client"
+                    oninput="filterCharts()"
+                >
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock header_acceuil %}

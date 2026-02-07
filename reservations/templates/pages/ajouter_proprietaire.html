@@ -1,0 +1,33 @@
+<!-- Modal Bootstrap 5 pour créer un propriétaire -->
+<div class="modal fade" id="createProprietaireModal" tabindex="-1" aria-labelledby="createProprietaireModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header" style="border-bottom:2px solid #0d5c45;">
+                <h5 class="modal-title" id="createProprietaireModalLabel">Créer un compte propriétaire</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="createProprietaireForm">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="nom" class="form-label">Nom</label>
+                        <input type="text" class="form-control" id="nom" name="nom" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="prenom" class="form-label">Prénom</label>
+                        <input type="text" class="form-control" id="prenom" name="prenom" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="telephone" class="form-label">Numéro de téléphone</label>
+                        <input type="text" class="form-control" id="telephone" name="telephone" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="password" class="form-label">Mot de passe</label>
+                        <input type="password" class="form-control" id="password" name="password" required>
+                    </div>
+                    <button type="submit" class="btn text-white" style="background-color:#49AD90;">Créer</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

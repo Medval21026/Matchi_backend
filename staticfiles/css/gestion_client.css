@@ -1,0 +1,155 @@
+.ListeClient{
+    width: 100%;
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    overflow: scroll;
+    padding-bottom: 1%;
+}
+.ListeClient::-webkit-scrollbar {
+    width: 1px;
+}
+
+.ListeClient::-webkit-scrollbar-track {
+    background: #fff; /* couleur de fond du défilement */
+}
+
+.ListeClient::-webkit-scrollbar-thumb {
+    background: #fff; /* couleur de la barre de défilement */
+}
+.information_sur_client{
+    width: 18%;
+    height:45vh;
+    background-color:#29282D;
+    margin-left: 1%;
+    border-radius: 10px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.75);
+    margin-top: 2%;
+}
+.attribut_client{
+    width: 100%;
+    height: 25vh;
+    padding: 20px;
+    margin-bottom: 3%;
+}
+.F_client p{
+    font-size: 20px;
+    color: #49AD90;
+}
+.F_client p b {
+    margin-right: 5%;
+    color: white;
+}
+.crudclient{
+    width: 100%;
+    height: 5vh;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+}
+.crudclient button{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+.Credits{
+    width:150px;
+    height:35px;
+    border-radius:60px;
+    outline:none;
+    border:1px solid silver;
+    padding-left:20px
+}
+@media screen and (min-width:288px) and (max-width: 434px) {
+    .information_sur_client{
+        width: 80%;
+        height: 30vh;
+        display: flex;
+        flex-direction: row; 
+        flex-wrap: wrap;
+        overflow: scroll;
+        padding-left: 2%;
+    }
+    h1{
+        margin-left: 20px;
+        font-size: 14px;
+    }
+    .attribut_client {
+        width: 100%;
+        height: 25vh;
+        margin: 0% 2% 2% 0%;
+        border-radius: 10px;
+        background-color: #29282D;
+    }
+    .F_client p{
+        font-size: 14px;
+        color: #49AD90;
+    }
+    .F_client p b {
+        margin-right: 5%;
+        color: white;
+    }
+    .Credits{
+        width:85px;
+        height:35px;
+    }
+    .crudclient{
+        width: 98%;
+        height: 3vh;
+    }
+    .crudclient button{
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+    .ajouter_client{
+        margin-left: 10vh;
+    }
+}
+@media screen and (min-width:434px) and (max-width: 880px) {
+    .information_sur_client{
+        width: 45%;
+        height: 25vh;
+        display: flex;
+        flex-direction: row; 
+        flex-wrap: wrap;
+        overflow: scroll;
+        padding-left: 2%;
+    }
+    h1{
+        margin-left: 20px;
+        font-size: 14px;
+    }
+    .attribut_client {
+        width: 100%;
+        height: 25vh;
+        margin: 0% 2% 2% 0%;
+        border-radius: 10px;
+        background-color: #29282D;
+    }
+    .F_client p{
+        font-size: 14px;
+        color: #49AD90;
+    }
+    .F_client p b {
+        margin-right: 5%;
+        color: white;
+    }
+    .Credits{
+        width:120px;
+        height:35px;
+    }
+    .crudclient{
+        width: 98%;
+        height: 3vh;
+        display: flex;
+        flex-direction: row;
+        justify-content: space-between;
+    }
+    .crudclient button{
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+}
+

@@ -1,0 +1,51 @@
+<!-- Bouton pour ouvrir le modal -->
+<div class="container-fluid">
+<button type="button" class="btn btn-success mt-2  w-25 w-md-auto" 
+        data-bs-toggle="modal" 
+        data-bs-target="#ajouterPeriodeModal">
+    Ajouter une Période
+</button>
+
+
+<!-- Modal Ajouter Période -->
+<div class="modal fade" id="ajouterPeriodeModal" tabindex="-1" aria-labelledby="ajouterPeriodeModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content" style="color:black;font-weight:400;">
+            
+            <!-- Header -->
+            <div class="modal-header" style="border-bottom:2px solid #49AD90;">
+                <h5 class="modal-title" id="ajouterPeriodeModalLabel">Ajouter une Période</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            
+            <!-- Body -->
+            <div class="modal-body">
+                <form id="ajouterPeriodeForm" action="{% url 'gestion_periode' %}" method="post">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="client" class="form-label">Client</label>
+                        <input type="number" class="form-control" id="client" name="client" placeholder="Téléphone du client" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="heure_debut" class="form-label">Heure de Début</label>
+                        <input type="time" class="form-control" id="heure_debut" name="heure_debut" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="heure_fin" class="form-label">Heure de Fin</label>
+                        <input type="time" class="form-control" id="heure_fin" name="heure_fin" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="prix" class="form-label">Prix</label>
+                        <input type="number" step="0.01" class="form-control" id="prix" name="prix" required>
+                    </div>
+
+                    <div class="d-flex justify-content-end">
+                        <button type="submit" class="btn btn-success">Ajouter</button>
+                    </div>
+                </form>
+            </div>
+
+        </div>
+    </div>
+</div>
+</div>

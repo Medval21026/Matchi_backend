@@ -1,0 +1,125 @@
+{% extends "index.html" %}
+{% load static %}
+{% block bodyAcademie %}
+
+<link rel="stylesheet" href="{% static 'css/academie.css' %}">
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"></script>
+
+<div id="messages" style="color: red; font-weight: bold; margin-left: 2%;">
+    {% include "pages/modifier_academie.html" %}
+    {% include "pages/ajouter_academie.html" %}
+</div>
+
+<div class="AFFicheListeAcademie ml-2">
+    <h2>Liste des Académies</h2>
+</div>
+
+<div class="ListeAcademie">
+    {% for academie in academies %}
+    <div class="academie" id="academie{{ academie.id }}" style="background-image: url('{{ academie.photo.url }}');"
+        data-name_fr="{{ academie.name_fr }}"
+        data-name_ar="{{ academie.name_ar }}"
+        data-longitude="{{ academie.longitude }}"
+        data-latitude="{{ academie.latitude }}"
+        data-age_group="{{ academie.age_group }}"
+        data-location_fr="{{ academie.location_fr }}"
+        data-location_ar="{{ academie.location_ar }}"
+        data-wilaye="{{ academie.wilaye.code_wilaye }}"
+        data-moughataa="{{ academie.moughataa.id }}">
+        <h5>{{ academie.wilaye.nom_wilaye_fr }}</h5>
+        <h4>{{ academie.nom_fr }}</h4>
+    </div>
+
+    <div class="formation_sur_academie" style="display: none;">
+        <div class="nom_academie">
+            <div class="name_">
+                <h1>{{ academie.name_fr }}</h1>
+            </div>
+            <div class="les_options">
+                <div class="modifier">
+                    <button onclick="afficherModalModification('{{ academie.id }}')">Modifier</button>
+                </div>
+                <div class="suprimer">
+                    <button onclick="SupprimerAcademie('{{ academie.id }}')">Supprimer</button>
+                </div>
+                <div class="ferme">
+                    <button onclick="closeFormationSurAcademie(this)">Fermer</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="attribut_academie">
+            <div class="attribut_academie1" style="overflow: hidden;text-overflow: ellipsis; white-space: nowrap;">
+                <p><b>Nom(Francais):</b> {{ academie.name_fr }}</p>
+                <p><b>Nom(Arabic) :</b> {{ academie.name_ar }}</p>
+                <p><b>Localisation :</b> {{ academie.latitude }} x {{ academie.longitude }}</p>
+                <p><b>Âge groupe :</b> {{ academie.age_group }}</p>
+            </div>
+            <div class="photo_academie" style="background-image: url('{{ academie.photo.url }}');">
+            </div>
+            <div class="attribut_academie2" style="overflow: hidden;text-overflow: ellipsis; white-space: nowrap;">
+                <p><b>Wilaye :</b> {{ academie.wilaye.nom_wilaye_fr }}</p>
+                <p><b>Moughataa :</b> {{ academie.moughataa.nom_ar }}</p>
+                <p><b>Lieu(Francais) :</b> {{ academie.location_fr }}</p>
+                <p><b>Lieu(Arabic) :</b> {{ academie.location_ar }}</p>
+            </div>
+            
+        </div>
+
+        
+    </div>
+    {% endfor %}
+</div>
+
+<script>
+    $(document).ready(function() {
+        $('.ListeAcademie').on('click', '.academie', function() {
+            $(this).next('.formation_sur_academie').show();
+        });
+
+        window.closeFormationSurAcademie = function(button) {
+            $(button).closest('.formation_sur_academie').hide();
+        };
+
+        window.afficherModalModification = function(academie_id) {
+            var academie = $("#academie" + academie_id).data();
+            $('#academie_id').val(academie_id);
+            $('#name_fr_modifier').val(academie.name_fr);
+            $('#name_ar_modifier').val(academie.name_ar);
+            $('#longitude_modifier').val(academie.longitude);
+            $('#latitude_modifier').val(academie.latitude);
+            $('#age_group_modifier').val(academie.age_group);
+            $('#location_fr_modifier').val(academie.location_fr);
+            $('#location_ar_modifier').val(academie.location_ar);
+            $('#Wilaye_modifier').val(academie.wilaye);
+            $('#Moughataa_modifier').val(academie.moughataa);
+            $('#modifierAcademieModal').modal('show');
+            var formAction = "{% url 'modifier_academie' 0 %}".replace('/0/', '/' + academie_id + '/');
+            $('#modifierAcademieForm').attr('action', formAction);
+        };
+
+        window.SupprimerAcademie = function(academie_id) {
+            if (confirm("Êtes-vous sûr de vouloir supprimer cette académie ?")) {
+                $.ajax({
+                    url: "{% url 'supprimer_academie' 0 %}".replace('/0/', '/' + academie_id + '/'),
+                    type: 'POST',
+                    data: {
+                        'csrfmiddlewaretoken': '{{ csrf_token }}'
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            $('#academie' + academie_id).remove();
+                            location.reload();
+                        } else {
+                            alert("Échec de la suppression de l'académie.");
+                        }
+                    }
+                });
+            }
+        };
+    });
+</script>
+
+{% endblock bodyAcademie %}
