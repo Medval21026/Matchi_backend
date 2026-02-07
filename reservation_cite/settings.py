@@ -12,6 +12,14 @@ https://docs.djangoproject.com/en/5.0/ref/settings/
 import os
 from pathlib import Path
 
+# Charger les variables d'environnement depuis .env (si disponible)
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    # python-dotenv n'est pas installé, continuer sans
+    pass
+
 # BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -100,20 +108,56 @@ WSGI_APPLICATION = 'reservation_cite.wsgi.application'
 import pymysql
 pymysql.install_as_MySQLdb()
 
+import os
 
+#         'ENGINE': 'mysql.connector.django',
+#         'NAME': 'cite',
+#         'USER': 'root',
+#         'PASSWORD': '',
+#         'HOST': 'localhost',
+#         'PORT': '3306',
+#         'OPTIONS': {
+#             'sql_mode': 'STRICT_TRANS_TABLES',
+#         },
+#     }
+# }
+# Configuration de la base de données avec variables d'environnement
+# Pour Railway, utilisez les variables d'environnement
 DATABASES = {
     'default': {
-        'ENGINE': 'mysql.connector.django',
-        'NAME': 'cite',
-        'USER': 'root',
-        'PASSWORD': '',
-        'HOST': 'localhost',
-        'PORT': '3306',
+        'ENGINE': os.getenv('DB_ENGINE', 'mysql.connector.django'),  # Par défaut mysql.connector
+        'NAME': os.getenv('MYSQLDATABASE', os.getenv('MYSQL_DATABASE', 'cite')),
+        'USER': os.getenv('MYSQLUSER', 'root'),
+        'PASSWORD': os.getenv('MYSQLPASSWORD', os.getenv('MYSQL_ROOT_PASSWORD', '')),
+        'HOST': os.getenv('MYSQLHOST', 'localhost'),
+        'PORT': os.getenv('MYSQLPORT', '3306'),
         'OPTIONS': {
             'sql_mode': 'STRICT_TRANS_TABLES',
+            'charset': 'utf8mb4',
         },
     }
 }
+
+# Si MYSQL_URL est fourni (format: mysql://user:password@host:port/database)
+mysql_url = os.getenv('MYSQL_URL') or os.getenv('MYSQL_PUBLIC_URL')
+if mysql_url:
+    import re
+    # Parser l'URL MySQL
+    match = re.match(r'mysql://([^:]+):([^@]+)@([^:]+):(\d+)/(.+)', mysql_url)
+    if match:
+        user, password, host, port, database = match.groups()
+        DATABASES['default'] = {
+            'ENGINE': 'mysql.connector.django',
+            'NAME': database,
+            'USER': user,
+            'PASSWORD': password,
+            'HOST': host,
+            'PORT': port,
+            'OPTIONS': {
+                'sql_mode': 'STRICT_TRANS_TABLES',
+                'charset': 'utf8mb4',
+            },
+        }
 
 
 
