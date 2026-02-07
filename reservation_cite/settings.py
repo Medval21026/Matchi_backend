@@ -105,11 +105,6 @@ WSGI_APPLICATION = 'reservation_cite.wsgi.application'
 #     }
 # }
 
-import pymysql
-pymysql.install_as_MySQLdb()
-
-import os
-
 #         'ENGINE': 'mysql.connector.django',
 #         'NAME': 'cite',
 #         'USER': 'root',
@@ -125,7 +120,7 @@ import os
 # Pour Railway, utilisez les variables d'environnement
 DATABASES = {
     'default': {
-        'ENGINE': os.getenv('DB_ENGINE', 'mysql.connector.django'),  # Par défaut mysql.connector
+        'ENGINE': os.getenv('DB_ENGINE', 'mysql.connector.django'),  # Utiliser mysql.connector au lieu de django.db.backends.mysql
         'NAME': os.getenv('MYSQLDATABASE', os.getenv('MYSQL_DATABASE', 'cite')),
         'USER': os.getenv('MYSQLUSER', 'root'),
         'PASSWORD': os.getenv('MYSQLPASSWORD', os.getenv('MYSQL_ROOT_PASSWORD', '')),
