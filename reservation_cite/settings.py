@@ -37,9 +37,9 @@ LOGIN_REDIRECT_URL = '/page_acceuil/'
 SECRET_KEY = 'django-insecure-gbyc5bz+zsg5(^2hu7mass($ix(t14#fzcv)zytmg6jq6a9f65'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG =True
+DEBUG = os.getenv('DEBUG', 'True') == 'True'
 # LOGIN_URL = 'login'
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '*').split(',')
 # Application definition
 
 INSTALLED_APPS = [
