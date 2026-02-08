@@ -134,8 +134,12 @@ DATABASES = {
 }
 
 # Si MYSQL_URL est fourni (format: mysql://user:password@host:port/database)
+# Ne l'utiliser QUE si on n'est pas en développement local
+# Si MYSQLHOST est défini à 'localhost', ignorer MYSQL_URL (développement local)
+mysql_host = os.getenv('MYSQLHOST', '')
 mysql_url = os.getenv('MYSQL_URL') or os.getenv('MYSQL_PUBLIC_URL')
-if mysql_url:
+# Utiliser MYSQL_URL seulement si MYSQLHOST n'est pas 'localhost' (pas de développement local)
+if mysql_url and mysql_host != 'localhost':
     import re
     # Parser l'URL MySQL
     match = re.match(r'mysql://([^:]+):([^@]+)@([^:]+):(\d+)/(.+)', mysql_url)
@@ -206,3 +210,14 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# Configuration CORS
+CORS_ALLOW_ALL_ORIGINS = True  # Pour le développement, autoriser toutes les origines
+CORS_ALLOW_CREDENTIALS = True
+
+# CSRF Trusted Origins pour Railway
+CSRF_TRUSTED_ORIGINS = [
+    'https://matchibackend-production.up.railway.app',
+    'http://localhost:8000',
+    'http://127.0.0.1:8000',
+]
