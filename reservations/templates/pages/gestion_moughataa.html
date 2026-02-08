@@ -1,0 +1,174 @@
+{% extends "index.html" %}
+{% load static %}
+{% block bodyGestion_moughataa %}
+<div class="container mt-4">
+    <h1>Liste des Moughataas</h1>
+    <button type="button" class="btn text-white fw-bold" style="background-color:#49AD90;"
+            data-bs-toggle="modal" data-bs-target="#createMoughataaModal">
+        Ajouter un Moughataa
+    </button>
+
+    <div class="ajouter_moughataa mb-3">
+        {% include "pages/ajouter_moughataa.html" %}
+        {% include "pages/modifier_moughataa.html" %}
+    </div>
+    
+    <div class="d-flex justify-content-between align-items-center mb-3 mt-3">
+        <div class="col-12 col-md-6 col-lg-3">
+            <input id="searchMoughataa" type="search" class="form-control" placeholder="Rechercher un moughataa">
+        </div>
+    </div>
+    
+    <div class="row d-flex flex-wrap g-3">
+        {% for moughataa in moughataas %}
+        <div class="col-12 col-md-6 col-lg-4 moughataa-card" 
+             data-nom-ar="{{ moughataa.nom_ar }}"
+             data-nom-fr="{{ moughataa.nom_fr }}"
+             data-wilaye="{{ moughataa.wilaye.nom_wilaye_fr|default:moughataa.wilaye.nom_wilaye_Ar }}">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h5 class="card-title">{{ moughataa.nom_fr }}</h5>
+                    <p class="card-text">
+                        <strong>Nom AR:</strong> {{ moughataa.nom_ar }}<br>
+                        <strong>Wilaya:</strong> {{ moughataa.wilaye.nom_wilaye_fr|default:moughataa.wilaye.nom_wilaye_Ar }}
+                    </p>
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-sm btn-primary btn-modifier-moughataa"
+                                data-bs-toggle="modal" data-bs-target="#editMoughataaModal"
+                                data-id="{{ moughataa.id }}"
+                                data-nom-fr="{{ moughataa.nom_fr }}"
+                                data-nom-ar="{{ moughataa.nom_ar }}"
+                                data-wilaye="{{ moughataa.wilaye.code_wilaye }}">
+                            Modifier
+                        </button>
+                        <button type="button" class="btn btn-sm btn-danger btn-supprimer-moughataa"
+                                data-id="{{ moughataa.id }}"
+                                data-nom="{{ moughataa.nom_ar|default:moughataa.nom_fr }}">
+                            Supprimer
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12">
+            <p class="text-muted">Aucun moughataa trouvé.</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+$(document).ready(function() {
+    // Recherche
+    $('#searchMoughataa').on('input', function () {
+        let val = $(this).val().toLowerCase().trim();
+        $('.moughataa-card').each(function () {
+            let nomAr = String($(this).data('nom-ar')).toLowerCase();
+            let nomFr = String($(this).data('nom-fr')).toLowerCase();
+            let wilaye = String($(this).data('wilaye')).toLowerCase();
+            $(this).toggle(nomAr.includes(val) || nomFr.includes(val) || wilaye.includes(val));
+        });
+    });
+
+    // Formulaire d'ajout
+    $(document).on('submit', '#createMoughataaForm', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        console.log('Formulaire moughataa soumis');
+        $.ajax({
+            url: "{% url 'ajouter_moughataa' %}",
+            type: "POST",
+            data: {
+                nom_fr: $('#nom_fr').val(),
+                nom_ar: $('#nom_ar').val(),
+                wilaye: $('#wilaye').val(),
+                csrfmiddlewaretoken: '{{ csrf_token }}'
+            },
+            success: function (response) {
+                if (response.success) {
+                    $('#createMoughataaModal').modal('hide');
+                    $('#createMoughataaForm')[0].reset();
+                    location.reload();
+                } else {
+                    alert(response.error || "Erreur lors de l'ajout.");
+                }
+            },
+            error: function (xhr) {
+                let response = xhr.responseJSON;
+                alert(response?.error || 'Erreur lors de l\'ajout.');
+            }
+        });
+        return false;
+    });
+
+    // Ouvrir modal de modification
+    $(document).on('click', '.btn-modifier-moughataa', function () {
+        $('#edit_moughataa_id').val($(this).data('id'));
+        $('#edit_nom_fr').val($(this).data('nom-fr'));
+        $('#edit_nom_ar').val($(this).data('nom-ar'));
+        $('#edit_wilaye').val($(this).data('wilaye'));
+    });
+
+    // Formulaire de modification
+    $(document).on('submit', '#editMoughataaForm', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        console.log('Formulaire modification moughataa soumis');
+        $.ajax({
+            url: "{% url 'modifier_moughataa' %}",
+            type: "POST",
+            data: {
+                moughataa_id: $('#edit_moughataa_id').val(),
+                nom_fr: $('#edit_nom_fr').val(),
+                nom_ar: $('#edit_nom_ar').val(),
+                wilaye: $('#edit_wilaye').val(),
+                csrfmiddlewaretoken: '{{ csrf_token }}'
+            },
+            success: function (response) {
+                if (response.success) {
+                    $('#editMoughataaModal').modal('hide');
+                    location.reload();
+                } else {
+                    alert(response.error || "Erreur lors de la modification.");
+                }
+            },
+            error: function (xhr) {
+                let response = xhr.responseJSON;
+                alert(response?.error || 'Erreur lors de la modification.');
+            }
+        });
+        return false;
+    });
+
+    // Suppression
+    $(document).on('click', '.btn-supprimer-moughataa', function (e) {
+        e.preventDefault();
+        let id = $(this).data('id');
+        let nom = $(this).data('nom');
+        if (confirm(`Êtes-vous sûr de vouloir supprimer le moughataa ${nom} ?`)) {
+            $.ajax({
+                url: "{% url 'supprimer_moughataa' %}",
+                type: "POST",
+                data: {
+                    moughataa_id: id,
+                    csrfmiddlewaretoken: '{{ csrf_token }}'
+                },
+                success: function (response) {
+                    if (response.success) {
+                        location.reload();
+                    } else {
+                        alert(response.error || "Erreur lors de la suppression.");
+                    }
+                },
+                error: function (xhr) {
+                    let response = xhr.responseJSON;
+                    alert(response?.error || 'Erreur lors de la suppression.');
+                }
+            });
+        }
+    });
+});
+</script>
+{% endblock %}

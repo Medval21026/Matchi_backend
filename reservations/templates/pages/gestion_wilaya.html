@@ -1,0 +1,170 @@
+{% extends "index.html" %}
+{% load static %}
+{% block bodyGestion_wilaya %}
+<div class="container mt-4">
+    <h1>Liste des Wilayas</h1>
+    <button type="button" class="btn text-white fw-bold" style="background-color:#49AD90;"
+            data-bs-toggle="modal" data-bs-target="#createWilayaModal">
+        Ajouter une Wilaya
+    </button>
+
+    <div class="ajouter_wilaya mb-3">
+        {% include "pages/ajouter_wilaya.html" %}
+        {% include "pages/modifier_wilaya.html" %}
+    </div>
+    
+    <div class="d-flex justify-content-between align-items-center mb-3 mt-3">
+        <div class="col-12 col-md-6 col-lg-3">
+            <input id="searchWilaya" type="search" class="form-control" placeholder="Rechercher une wilaya">
+        </div>
+    </div>
+    
+    <div class="row d-flex flex-wrap g-3">
+        {% for wilaya in wilayas %}
+        <div class="col-12 col-md-6 col-lg-4 wilaya-card" 
+             data-nom-ar="{{ wilaya.nom_wilaye_Ar|default:'' }}"
+             data-nom-fr="{{ wilaya.nom_wilaye_fr|default:'' }}">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h5 class="card-title">{{ wilaya.nom_wilaye_fr|default:wilaya.nom_wilaye_Ar|default:"Sans nom" }}</h5>
+                    <p class="card-text">
+                        <strong>Nom AR:</strong> {{ wilaya.nom_wilaye_Ar|default:"-" }}<br>
+                        <strong>Nom FR:</strong> {{ wilaya.nom_wilaye_fr|default:"-" }}
+                    </p>
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-sm btn-primary btn-modifier-wilaya"
+                                data-bs-toggle="modal" data-bs-target="#editWilayaModal"
+                                data-code="{{ wilaya.code_wilaye }}"
+                                data-nom-ar="{{ wilaya.nom_wilaye_Ar|default:'' }}"
+                                data-nom-fr="{{ wilaya.nom_wilaye_fr|default:'' }}">
+                            Modifier
+                        </button>
+                        <button type="button" class="btn btn-sm btn-danger btn-supprimer-wilaya"
+                                data-code="{{ wilaya.code_wilaye }}"
+                                data-nom="{{ wilaya.nom_wilaye_fr|default:wilaya.nom_wilaye_Ar|default:wilaya.code_wilaye }}">
+                            Supprimer
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12">
+            <p class="text-muted">Aucune wilaya trouvée.</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+$(document).ready(function() {
+    // Recherche
+    $('#searchWilaya').on('input', function () {
+        let val = $(this).val().toLowerCase().trim();
+        $('.wilaya-card').each(function () {
+            let code = String($(this).data('code')).toLowerCase();
+            let nomAr = String($(this).data('nom-ar')).toLowerCase();
+            let nomFr = String($(this).data('nom-fr')).toLowerCase();
+            $(this).toggle(code.includes(val) || nomAr.includes(val) || nomFr.includes(val));
+        });
+    });
+
+    // Formulaire d'ajout
+    $(document).on('submit', '#createWilayaForm', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        console.log('Formulaire wilaya soumis');
+        $.ajax({
+            url: "{% url 'ajouter_wilaya' %}",
+            type: "POST",
+            data: {
+                code_wilaye: $('#code_wilaye').val(),
+                nom_wilaye_Ar: $('#nom_wilaye_Ar').val(),
+                nom_wilaye_fr: $('#nom_wilaye_fr').val(),
+                csrfmiddlewaretoken: '{{ csrf_token }}'
+            },
+            success: function (response) {
+                if (response.success) {
+                    $('#createWilayaModal').modal('hide');
+                    $('#createWilayaForm')[0].reset();
+                    location.reload();
+                } else {
+                    alert(response.error || "Erreur lors de l'ajout de la wilaya.");
+                }
+            },
+            error: function (xhr) {
+                let response = xhr.responseJSON;
+                alert(response?.error || 'Erreur lors de l\'ajout de la wilaya.');
+            }
+        });
+        return false;
+    });
+
+    // Ouvrir modal de modification
+    $(document).on('click', '.btn-modifier-wilaya', function () {
+        $('#edit_code_wilaye').val($(this).data('code'));
+        $('#edit_nom_wilaye_Ar').val($(this).data('nom-ar'));
+        $('#edit_nom_wilaye_fr').val($(this).data('nom-fr'));
+    });
+
+    // Formulaire de modification
+    $(document).on('submit', '#editWilayaForm', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        console.log('Formulaire modification wilaya soumis');
+        $.ajax({
+            url: "{% url 'modifier_wilaya' %}",
+            type: "POST",
+            data: {
+                code_wilaye: $('#edit_code_wilaye').val(),
+                nom_wilaye_Ar: $('#edit_nom_wilaye_Ar').val(),
+                nom_wilaye_fr: $('#edit_nom_wilaye_fr').val(),
+                csrfmiddlewaretoken: '{{ csrf_token }}'
+            },
+            success: function (response) {
+                if (response.success) {
+                    $('#editWilayaModal').modal('hide');
+                    location.reload();
+                } else {
+                    alert(response.error || "Erreur lors de la modification.");
+                }
+            },
+            error: function (xhr) {
+                let response = xhr.responseJSON;
+                alert(response?.error || 'Erreur lors de la modification.');
+            }
+        });
+        return false;
+    });
+
+    // Suppression
+    $(document).on('click', '.btn-supprimer-wilaya', function (e) {
+        e.preventDefault();
+        let code = $(this).data('code');
+        let nom = $(this).data('nom');
+        if (confirm(`Êtes-vous sûr de vouloir supprimer la wilaya ${nom} ?`)) {
+            $.ajax({
+                url: "{% url 'supprimer_wilaya' %}",
+                type: "POST",
+                data: {
+                    code_wilaye: code,
+                    csrfmiddlewaretoken: '{{ csrf_token }}'
+                },
+                success: function (response) {
+                    if (response.success) {
+                        location.reload();
+                    } else {
+                        alert(response.error || "Erreur lors de la suppression.");
+                    }
+                },
+                error: function (xhr) {
+                    let response = xhr.responseJSON;
+                    alert(response?.error || 'Erreur lors de la suppression.');
+                }
+            });
+        }
+    });
+});
+</script>
+{% endblock %}

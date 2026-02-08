@@ -40,6 +40,12 @@
                         <a class="nav-link" id="academie" href="{% url 'academie' %}">Academie</a>
                     </li>
                     <li class="nav-item">
+                        <a class="nav-link" id="gestion_wilaya" href="{% url 'gestion_wilaya' %}">Wilaya</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" id="gestion_moughataa" href="{% url 'gestion_moughataa' %}">Moughataa</a>
+                    </li>
+                    <li class="nav-item">
                         <a class="nav-link" id="periode" href="{% url 'gestion_periode' %}">Periode</a>
                     </li>
                     <li class="nav-item">
@@ -74,6 +80,8 @@
                 {% block listes_jouers %}{% endblock listes_jouers %}
                 {% block bodyGestion_client %}{% endblock bodyGestion_client %}
                 {% block bodyGestion_proprietaire %}{% endblock bodyGestion_proprietaire %}
+                {% block bodyGestion_wilaya %}{% endblock bodyGestion_wilaya %}
+                {% block bodyGestion_moughataa %}{% endblock bodyGestion_moughataa %}
                 {% block bodyAcceuil %}{% endblock bodyAcceuil %}
                 {% block bodyAcademie %}{% endblock bodyAcademie %}
                 {% block liste_periode %}{% endblock liste_periode %}

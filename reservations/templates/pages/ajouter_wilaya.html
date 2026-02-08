@@ -1,0 +1,28 @@
+<div class="modal fade" id="createWilayaModal" tabindex="-1" aria-labelledby="createWilayaModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header" style="border-bottom:2px solid #0d5c45;">
+                <h5 class="modal-title" id="createWilayaModalLabel">Ajouter une Wilaya</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="createWilayaForm" method="post">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="code_wilaye" class="form-label">Code Wilaya</label>
+                        <input type="number" class="form-control" id="code_wilaye" name="code_wilaye" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="nom_wilaye_fr" class="form-label">Nom (Français)</label>
+                        <input type="text" class="form-control" id="nom_wilaye_fr" name="nom_wilaye_fr">
+                    </div>
+                    <div class="mb-3">
+                        <label for="nom_wilaye_Ar" class="form-label">Nom (Arabe)</label>
+                        <input type="text" class="form-control" id="nom_wilaye_Ar" name="nom_wilaye_Ar">
+                    </div>
+                    <button type="submit" class="btn text-white" style="background-color:#49AD90;">Créer</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

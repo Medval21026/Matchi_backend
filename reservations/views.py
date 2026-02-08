@@ -107,6 +107,138 @@ def supprimer_proprietaire(request):
             return JsonResponse({"success": False, "error": str(e)}, status=400)
 
     return JsonResponse({"success": False, "error": "Méthode non autorisée"}, status=405)
+
+@login_required_custom
+def gestion_wilaya(request):
+    wilayas = Wilaye.objects.all().order_by('code_wilaye')
+    return render(request, "pages/gestion_wilaya.html", {"wilayas": wilayas})
+
+@login_required_custom
+def ajouter_wilaya(request):
+    if request.method == "POST":
+        try:
+            code_wilaye = int(request.POST.get("code_wilaye"))
+            nom_wilaye_Ar = request.POST.get("nom_wilaye_Ar", "")
+            nom_wilaye_fr = request.POST.get("nom_wilaye_fr", "")
+            
+            wilaya = Wilaye.objects.create(
+                code_wilaye=code_wilaye,
+                nom_wilaye_Ar=nom_wilaye_Ar,
+                nom_wilaye_fr=nom_wilaye_fr
+            )
+            return JsonResponse({"success": True, "wilaya": {"code_wilaye": wilaya.code_wilaye, "nom_wilaye_Ar": wilaya.nom_wilaye_Ar, "nom_wilaye_fr": wilaya.nom_wilaye_fr}})
+        except IntegrityError:
+            return JsonResponse({"success": False, "error": "Une wilaya avec ce code existe déjà"}, status=400)
+        except Exception as e:
+            return JsonResponse({"success": False, "error": str(e)}, status=400)
+    return JsonResponse({"success": False, "error": "Méthode non autorisée"}, status=405)
+
+@login_required_custom
+def modifier_wilaya(request):
+    if request.method == "POST":
+        code_wilaye = request.POST.get('code_wilaye')
+        if not code_wilaye:
+            return JsonResponse({'success': False, 'error': 'Code wilaya manquant'}, status=400)
+        
+        try:
+            wilaya = Wilaye.objects.get(code_wilaye=code_wilaye)
+            wilaya.nom_wilaye_Ar = request.POST.get("nom_wilaye_Ar", wilaya.nom_wilaye_Ar)
+            wilaya.nom_wilaye_fr = request.POST.get("nom_wilaye_fr", wilaya.nom_wilaye_fr)
+            wilaya.save()
+            return JsonResponse({"success": True, "wilaya": {"code_wilaye": wilaya.code_wilaye, "nom_wilaye_Ar": wilaya.nom_wilaye_Ar, "nom_wilaye_fr": wilaya.nom_wilaye_fr}})
+        except Wilaye.DoesNotExist:
+            return JsonResponse({"success": False, "error": "Wilaya non trouvée"}, status=404)
+        except Exception as e:
+            return JsonResponse({"success": False, "error": str(e)}, status=400)
+    return JsonResponse({"success": False, "error": "Méthode non autorisée"}, status=405)
+
+@login_required_custom
+def supprimer_wilaya(request):
+    if request.method == "POST":
+        code_wilaye = request.POST.get('code_wilaye')
+        if not code_wilaye:
+            return JsonResponse({'success': False, 'error': 'Code wilaya manquant'}, status=400)
+        
+        try:
+            wilaya = Wilaye.objects.get(code_wilaye=code_wilaye)
+            nom = wilaya.nom_wilaye_Ar or wilaya.nom_wilaye_fr or str(code_wilaye)
+            wilaya.delete()
+            return JsonResponse({"success": True, "message": f"Wilaya {nom} supprimée avec succès"})
+        except Wilaye.DoesNotExist:
+            return JsonResponse({"success": False, "error": "Wilaya non trouvée"}, status=404)
+        except Exception as e:
+            return JsonResponse({"success": False, "error": str(e)}, status=400)
+    return JsonResponse({"success": False, "error": "Méthode non autorisée"}, status=405)
+
+@login_required_custom
+def gestion_moughataa(request):
+    moughataas = Moughataa.objects.all().select_related('wilaye').order_by('wilaye__code_wilaye', 'nom_fr')
+    wilayas = Wilaye.objects.all().order_by('code_wilaye')
+    return render(request, "pages/gestion_moughataa.html", {"moughataas": moughataas, "wilayas": wilayas})
+
+@login_required_custom
+def ajouter_moughataa(request):
+    if request.method == "POST":
+        try:
+            nom_fr = request.POST.get("nom_fr")
+            nom_ar = request.POST.get("nom_ar")
+            wilaye_id = int(request.POST.get("wilaye"))
+            
+            wilaye = Wilaye.objects.get(code_wilaye=wilaye_id)
+            moughataa = Moughataa.objects.create(
+                nom_fr=nom_fr,
+                nom_ar=nom_ar,
+                wilaye=wilaye
+            )
+            return JsonResponse({"success": True, "moughataa": {"id": moughataa.id, "nom_fr": moughataa.nom_fr, "nom_ar": moughataa.nom_ar, "wilaye": wilaye.nom_wilaye_fr or wilaye.nom_wilaye_Ar}})
+        except Wilaye.DoesNotExist:
+            return JsonResponse({"success": False, "error": "Wilaya non trouvée"}, status=404)
+        except Exception as e:
+            return JsonResponse({"success": False, "error": str(e)}, status=400)
+    return JsonResponse({"success": False, "error": "Méthode non autorisée"}, status=405)
+
+@login_required_custom
+def modifier_moughataa(request):
+    if request.method == "POST":
+        moughataa_id = request.POST.get('moughataa_id')
+        if not moughataa_id:
+            return JsonResponse({'success': False, 'error': 'ID moughataa manquant'}, status=400)
+        
+        try:
+            moughataa = Moughataa.objects.get(id=moughataa_id)
+            moughataa.nom_fr = request.POST.get("nom_fr", moughataa.nom_fr)
+            moughataa.nom_ar = request.POST.get("nom_ar", moughataa.nom_ar)
+            
+            wilaye_id = request.POST.get("wilaye")
+            if wilaye_id:
+                wilaye = Wilaye.objects.get(code_wilaye=wilaye_id)
+                moughataa.wilaye = wilaye
+            
+            moughataa.save()
+            return JsonResponse({"success": True, "moughataa": {"id": moughataa.id, "nom_fr": moughataa.nom_fr, "nom_ar": moughataa.nom_ar, "wilaye": moughataa.wilaye.nom_wilaye_fr or moughataa.wilaye.nom_wilaye_Ar}})
+        except Moughataa.DoesNotExist:
+            return JsonResponse({"success": False, "error": "Moughataa non trouvé"}, status=404)
+        except Exception as e:
+            return JsonResponse({"success": False, "error": str(e)}, status=400)
+    return JsonResponse({"success": False, "error": "Méthode non autorisée"}, status=405)
+
+@login_required_custom
+def supprimer_moughataa(request):
+    if request.method == "POST":
+        moughataa_id = request.POST.get('moughataa_id')
+        if not moughataa_id:
+            return JsonResponse({'success': False, 'error': 'ID moughataa manquant'}, status=400)
+        
+        try:
+            moughataa = Moughataa.objects.get(id=moughataa_id)
+            nom = moughataa.nom_ar or moughataa.nom_fr
+            moughataa.delete()
+            return JsonResponse({"success": True, "message": f"Moughataa {nom} supprimé avec succès"})
+        except Moughataa.DoesNotExist:
+            return JsonResponse({"success": False, "error": "Moughataa non trouvé"}, status=404)
+        except Exception as e:
+            return JsonResponse({"success": False, "error": str(e)}, status=400)
+    return JsonResponse({"success": False, "error": "Méthode non autorisée"}, status=405)
     
 @login_required_custom
 def get_moughataa(request, wilaya_id):

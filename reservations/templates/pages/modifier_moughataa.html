@@ -1,0 +1,34 @@
+<div class="modal fade" id="editMoughataaModal" tabindex="-1" aria-labelledby="editMoughataaModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header" style="border-bottom:2px solid #49AD90;">
+                <h5 class="modal-title" id="editMoughataaModalLabel">Modifier le Moughataa</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editMoughataaForm" method="post">
+                    {% csrf_token %}
+                    <input type="hidden" id="edit_moughataa_id" name="moughataa_id">
+                    <div class="mb-3">
+                        <label for="edit_nom_fr" class="form-label">Nom (Français)</label>
+                        <input type="text" class="form-control" id="edit_nom_fr" name="nom_fr" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit_nom_ar" class="form-label">Nom (Arabe)</label>
+                        <input type="text" class="form-control" id="edit_nom_ar" name="nom_ar" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit_wilaye" class="form-label">Wilaya</label>
+                        <select class="form-control" id="edit_wilaye" name="wilaye" required>
+                            <option value="">Sélectionner une wilaya</option>
+                            {% for wilaya in wilayas %}
+                            <option value="{{ wilaya.code_wilaye }}">{{ wilaya.nom_wilaye_fr|default:wilaya.nom_wilaye_Ar }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <button type="submit" class="btn text-white" style="background-color:#085f46;">Modifier</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

@@ -23,6 +23,16 @@ urlpatterns = [
     path('ajouter_proprietaire', views.ajouter_proprietaire, name='ajouter_proprietaire'),
     path('modifier_proprietaire', views.modifier_proprietaire, name='modifier_proprietaire'),
     path('supprimer_proprietaire', views.supprimer_proprietaire, name='supprimer_proprietaire'),
+    
+    path('gestion_wilaya', views.gestion_wilaya, name='gestion_wilaya'),
+    path('ajouter_wilaya', views.ajouter_wilaya, name='ajouter_wilaya'),
+    path('modifier_wilaya', views.modifier_wilaya, name='modifier_wilaya'),
+    path('supprimer_wilaya', views.supprimer_wilaya, name='supprimer_wilaya'),
+    
+    path('gestion_moughataa', views.gestion_moughataa, name='gestion_moughataa'),
+    path('ajouter_moughataa', views.ajouter_moughataa, name='ajouter_moughataa'),
+    path('modifier_moughataa', views.modifier_moughataa, name='modifier_moughataa'),
+    path('supprimer_moughataa', views.supprimer_moughataa, name='supprimer_moughataa'),
 
     path('listes_joueurs', views.listes_joueurs, name='listes_joueurs'),
     path('inscription', views.inscription, name='inscription'),
