@@ -111,10 +111,34 @@ try:
 except Exception as e:
     print(f"   ⚠️  Erreur lors de la vérification: {e}")
 
-# Étape 4 : Lister les tables créées
-print(f"\n🔧 Étape 4 : Liste des tables créées...")
+# Étape 4 : Vérifier la base de données utilisée par Django
+print(f"\n🔧 Étape 4 : Vérification de la base de données Django...")
+try:
+    db_config = connection.settings_dict
+    print(f"   📊 Configuration Django réelle:")
+    print(f"      Database: {db_config.get('NAME', 'N/A')}")
+    print(f"      Host: {db_config.get('HOST', 'N/A')}")
+    print(f"      User: {db_config.get('USER', 'N/A')}")
+    print(f"      Port: {db_config.get('PORT', 'N/A')}")
+    
+    # Vérifier quelle base de données est utilisée
+    actual_db = db_config.get('NAME', '')
+    if actual_db != db_name:
+        print(f"\n   ⚠️  ATTENTION : Django utilise la base '{actual_db}' au lieu de '{db_name}'")
+        print(f"   ℹ️  Cela peut être dû à MYSQL_URL qui écrase MYSQLDATABASE")
+    
+except Exception as e:
+    print(f"   ⚠️  Erreur lors de la vérification: {e}")
+
+# Étape 5 : Lister les tables créées
+print(f"\n🔧 Étape 5 : Liste des tables créées...")
 try:
     with connection.cursor() as cursor:
+        # Afficher la base de données actuelle
+        cursor.execute("SELECT DATABASE()")
+        current_db = cursor.fetchone()[0]
+        print(f"   📊 Base de données actuelle: {current_db}")
+        
         cursor.execute("SHOW TABLES")
         tables = [table[0] for table in cursor.fetchall()]
         if tables:
@@ -122,7 +146,8 @@ try:
             for table in tables:
                 print(f"      - {table}")
         else:
-            print(f"   ⚠️  Aucune table trouvée")
+            print(f"   ⚠️  Aucune table trouvée dans la base '{current_db}'")
+            print(f"   ℹ️  Vérifiez que vous regardez la bonne base de données dans Railway")
 except Exception as e:
     print(f"   ⚠️  Erreur lors de la liste des tables: {e}")
 

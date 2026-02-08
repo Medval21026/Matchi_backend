@@ -136,19 +136,26 @@ DATABASES = {
 
 # Si MYSQL_URL est fourni (format: mysql://user:password@host:port/database)
 # Ne l'utiliser QUE si on n'est pas en développement local
-# Si MYSQLHOST est défini à 'localhost', ignorer MYSQL_URL (développement local)
+# IMPORTANT: Toujours utiliser MYSQLDATABASE=cite si défini, même si MYSQL_URL est présent
 mysql_host = os.getenv('MYSQLHOST', '')
 mysql_url = os.getenv('MYSQL_URL') or os.getenv('MYSQL_PUBLIC_URL')
+mysql_database_explicit = os.getenv('MYSQLDATABASE')  # Variable explicitement définie
+
 # Utiliser MYSQL_URL seulement si MYSQLHOST n'est pas 'localhost' (pas de développement local)
+# MAIS forcer l'utilisation de MYSQLDATABASE si explicitement défini
 if mysql_url and mysql_host != 'localhost':
     import re
     # Parser l'URL MySQL
     match = re.match(r'mysql://([^:]+):([^@]+)@([^:]+):(\d+)/(.+)', mysql_url)
     if match:
-        user, password, host, port, database = match.groups()
+        user, password, host, port, database_from_url = match.groups()
+        # Si MYSQLDATABASE est explicitement défini, l'utiliser (priorité)
+        # Sinon, utiliser la base de l'URL
+        final_database = mysql_database_explicit if mysql_database_explicit else database_from_url
+        
         DATABASES['default'] = {
             'ENGINE': 'mysql.connector.django',
-            'NAME': database,
+            'NAME': final_database,  # Utilise MYSQLDATABASE si défini, sinon la base de l'URL
             'USER': user,
             'PASSWORD': password,
             'HOST': host,
