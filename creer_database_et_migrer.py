@@ -67,8 +67,14 @@ try:
     conn.close()
     
 except Error as e:
-    print(f"   ❌ Erreur lors de la création de la base de données: {e}")
-    sys.exit(1)
+    error_msg = str(e).lower()
+    # Si l'erreur indique que la base existe déjà, continuer
+    if 'database exists' in error_msg or 'already exists' in error_msg:
+        print(f"   ℹ️  La base de données '{db_name}' existe déjà, continuation...")
+    else:
+        print(f"   ⚠️  Erreur lors de la création de la base de données: {e}")
+        print(f"   ℹ️  Tentative de continuation avec les migrations...")
+    # Ne pas bloquer le déploiement, continuer avec les migrations
 
 # Étape 2 : Exécuter les migrations
 print(f"\n🔧 Étape 2 : Exécution des migrations...")
@@ -80,8 +86,9 @@ except Exception as e:
     print(f"   ❌ Erreur lors des migrations: {e}")
     import traceback
     traceback.print_exc()
-    # Ne pas bloquer le démarrage, continuer quand même
-    print(f"   ⚠️  Continuation malgré l'erreur...")
+    # Les migrations doivent réussir, sinon le déploiement échoue
+    print(f"   ❌ Les migrations ont échoué, le déploiement sera arrêté")
+    sys.exit(1)
 
 # Étape 3 : Vérifier les migrations appliquées
 print(f"\n🔧 Étape 3 : Vérification des migrations...")
