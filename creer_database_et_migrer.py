@@ -80,7 +80,19 @@ except Error as e:
 print(f"\n🔧 Étape 2 : Exécution des migrations...")
 try:
     from django.core.management import call_command
+    
+    # Afficher les migrations en attente avant d'exécuter
+    print(f"   📋 Vérification des migrations en attente...")
+    call_command('showmigrations', '--list', verbosity=1)
+    
+    # Exécuter les migrations avec verbosité maximale
+    print(f"\n   🔄 Application des migrations...")
     call_command('migrate', '--noinput', verbosity=2)
+    
+    # Forcer les migrations de l'application reservations si nécessaire
+    print(f"\n   🔄 Application spécifique des migrations 'reservations'...")
+    call_command('migrate', 'reservations', '--noinput', verbosity=2)
+    
     print(f"   ✅ Migrations exécutées avec succès")
 except Exception as e:
     print(f"   ❌ Erreur lors des migrations: {e}")
@@ -93,8 +105,9 @@ except Exception as e:
 # Étape 3 : Vérifier les migrations appliquées
 print(f"\n🔧 Étape 3 : Vérification des migrations...")
 try:
-    from django.core.management import execute_from_command_line
-    execute_from_command_line(['manage.py', 'showmigrations'])
+    from django.core.management import call_command
+    print(f"   📋 Liste complète des migrations:")
+    call_command('showmigrations', verbosity=1)
 except Exception as e:
     print(f"   ⚠️  Erreur lors de la vérification: {e}")
 

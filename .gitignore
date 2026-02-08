@@ -13,8 +13,11 @@ __pycache__/
 venv/
 .env/
 
-# Ignore Django migrations
-*/migrations/
+# Ignore Django migrations (mais garder les fichiers de migration)
+# */migrations/
+# Ignorer seulement les fichiers compilés dans migrations
+*/migrations/__pycache__/
+*/migrations/*.pyc
 # dependencies
 /node_modules
 /.pnp
