@@ -1,0 +1,111 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+"""
+Script pour créer la base de données 'cite' et exécuter les migrations sur Railway
+À exécuter via: railway run python creer_database_et_migrer.py
+"""
+
+import os
+import sys
+import django
+
+# Charger les variables d'environnement
+from dotenv import load_dotenv
+load_dotenv()
+
+# Configurer Django
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'reservation_cite.settings')
+django.setup()
+
+from django.db import connection
+import mysql.connector
+from mysql.connector import Error
+
+print("=" * 60)
+print("CRÉATION DE LA BASE DE DONNÉES ET MIGRATIONS")
+print("=" * 60)
+
+# Récupérer les paramètres de connexion
+db_host = os.getenv('MYSQLHOST', 'localhost')
+db_user = os.getenv('MYSQLUSER', 'root')
+db_password = os.getenv('MYSQLPASSWORD', '')
+db_port = int(os.getenv('MYSQLPORT', '3306'))
+db_name = os.getenv('MYSQLDATABASE', 'cite')
+
+print(f"\n📊 Configuration:")
+print(f"   Host: {db_host}")
+print(f"   User: {db_user}")
+print(f"   Port: {db_port}")
+print(f"   Database: {db_name}")
+
+# Étape 1 : Créer la base de données si elle n'existe pas
+print(f"\n🔧 Étape 1 : Création de la base de données '{db_name}'...")
+try:
+    # Se connecter sans spécifier de base de données
+    conn = mysql.connector.connect(
+        host=db_host,
+        user=db_user,
+        password=db_password,
+        port=db_port
+    )
+    cursor = conn.cursor()
+    
+    # Créer la base de données si elle n'existe pas
+    cursor.execute(f"CREATE DATABASE IF NOT EXISTS {db_name} CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci")
+    print(f"   ✅ Base de données '{db_name}' créée ou déjà existante")
+    
+    # Vérifier que la base existe
+    cursor.execute("SHOW DATABASES")
+    databases = [db[0] for db in cursor.fetchall()]
+    if db_name in databases:
+        print(f"   ✅ Base de données '{db_name}' vérifiée")
+    else:
+        print(f"   ❌ Erreur : Base de données '{db_name}' non trouvée")
+        sys.exit(1)
+    
+    cursor.close()
+    conn.close()
+    
+except Error as e:
+    print(f"   ❌ Erreur lors de la création de la base de données: {e}")
+    sys.exit(1)
+
+# Étape 2 : Exécuter les migrations
+print(f"\n🔧 Étape 2 : Exécution des migrations...")
+try:
+    from django.core.management import call_command
+    call_command('migrate', '--noinput', verbosity=2)
+    print(f"   ✅ Migrations exécutées avec succès")
+except Exception as e:
+    print(f"   ❌ Erreur lors des migrations: {e}")
+    import traceback
+    traceback.print_exc()
+    # Ne pas bloquer le démarrage, continuer quand même
+    print(f"   ⚠️  Continuation malgré l'erreur...")
+
+# Étape 3 : Vérifier les migrations appliquées
+print(f"\n🔧 Étape 3 : Vérification des migrations...")
+try:
+    from django.core.management import execute_from_command_line
+    execute_from_command_line(['manage.py', 'showmigrations'])
+except Exception as e:
+    print(f"   ⚠️  Erreur lors de la vérification: {e}")
+
+# Étape 4 : Lister les tables créées
+print(f"\n🔧 Étape 4 : Liste des tables créées...")
+try:
+    with connection.cursor() as cursor:
+        cursor.execute("SHOW TABLES")
+        tables = [table[0] for table in cursor.fetchall()]
+        if tables:
+            print(f"   ✅ {len(tables)} table(s) trouvée(s):")
+            for table in tables:
+                print(f"      - {table}")
+        else:
+            print(f"   ⚠️  Aucune table trouvée")
+except Exception as e:
+    print(f"   ⚠️  Erreur lors de la liste des tables: {e}")
+
+print("\n" + "=" * 60)
+print("✅ TERMINÉ")
+print("=" * 60)
