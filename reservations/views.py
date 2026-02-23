@@ -36,7 +36,7 @@ from .serializers import WilayeSerializer, MoughataaSerializer,AcademieSerialize
 from .models import Wilaye, Moughataa,Periode ,Version
 from .serializers import WilayeSerializer, MoughataaSerializer,IndisponibiliteSerializer
 from django.views.decorators.http import require_http_methods
-from .proprietaire.services.proprietaire_api import get_all_proprietaires, get_horaires_occupes, create_proprietaire, update_proprietaire, delete_proprietaire
+from .proprietaire.services.proprietaire_api import get_all_proprietaires, create_proprietaire, update_proprietaire, delete_proprietaire
 
 @login_required_custom
 def liste_proprietaires(request):
@@ -913,9 +913,7 @@ def liste_versions(request):
     versions = Version.objects.all()
     return render(request, 'pages/versions.html', {'versions': versions})
 
-@login_required_custom
-def page_synchronisation(request):
-    return render(request, 'pages/synchronisation.html')
+
 
 @login_required_custom
 def ajouter_version(request):
@@ -941,110 +939,6 @@ def supprimer_version(request, id):
     version = get_object_or_404(Version, id=id)
     version.delete()
     return JsonResponse({'success': True})
-
-@login_required_custom
-def synchroniser_horaires_occupes(request):
-    """
-    Synchronise les horaires occupés depuis l'API Spring Boot
-    vers la table Indisponibilites
-    """
-    try:
-        # Récupérer les horaires occupés depuis l'API
-        data = get_horaires_occupes()
-        horaires = data.get('horairesOccupes', [])
-        
-        if not horaires:
-            return JsonResponse({
-                'success': False, 
-                'error': 'Aucun horaire occupé trouvé',
-                'inserted': 0,
-                'errors': 0
-            })
-        
-        inserted_count = 0
-        error_count = 0
-        errors_details = []
-        
-        for horaire in horaires:
-            try:
-                # Récupérer les données
-                date_str = horaire.get('date')
-                heure_debut_str = horaire.get('heureDebut')
-                heure_fin_str = horaire.get('heureFin')
-                telephone_proprietaire = str(horaire.get('telephoneProprietaire'))
-                
-                # Convertir les dates et heures
-                from datetime import datetime
-                date_indisponibilite = datetime.strptime(date_str, '%Y-%m-%d').date()
-                heure_debut = datetime.strptime(heure_debut_str, '%H:%M:%S').time()
-                heure_fin = datetime.strptime(heure_fin_str, '%H:%M:%S').time()
-                
-                # Trouver le client avec ce numéro de téléphone
-                try:
-                    client = Client.objects.get(numero_telephone=telephone_proprietaire)
-                except Client.DoesNotExist:
-                    error_count += 1
-                    errors_details.append(f"Client avec téléphone {telephone_proprietaire} non trouvé")
-                    continue
-                
-                # Trouver le terrain associé à ce client
-                try:
-                    terrain = Terrains.objects.get(client=client)
-                except Terrains.DoesNotExist:
-                    error_count += 1
-                    errors_details.append(f"Aucun terrain trouvé pour le client {telephone_proprietaire}")
-                    continue
-                except Terrains.MultipleObjectsReturned:
-                    # Si plusieurs terrains, prendre le premier
-                    terrain = Terrains.objects.filter(client=client).first()
-                
-                # Vérifier si l'indisponibilité existe déjà
-                exists = Indisponibilites.objects.filter(
-                    terrain=terrain,
-                    date_indisponibilite=date_indisponibilite,
-                    heure_debut=heure_debut,
-                    heure_fin=heure_fin
-                ).exists()
-                
-                if not exists:
-                    # Créer l'indisponibilité
-                    Indisponibilites.objects.create(
-                        terrain=terrain,
-                        date_indisponibilite=date_indisponibilite,
-                        heure_debut=heure_debut,
-                        heure_fin=heure_fin
-                    )
-                    inserted_count += 1
-                
-            except Exception as e:
-                error_count += 1
-                errors_details.append(f"Erreur pour {horaire.get('date', 'date inconnue')}: {str(e)}")
-                continue
-        
-        return JsonResponse({
-            'success': True,
-            'message': f'{inserted_count} horaires synchronisés avec succès',
-            'inserted': inserted_count,
-            'errors': error_count,
-            'errors_details': errors_details[:10]  # Limiter à 10 erreurs
-        })
-        
-    except Exception as e:
-        return JsonResponse({
-            'success': False,
-            'error': f'Erreur lors de la synchronisation : {str(e)}'
-        }, status=500)
-
-
-
-
-
-
-
-
-
-
-
 
 
 

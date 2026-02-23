@@ -1,7 +1,6 @@
 import requests
 
-BASE_URL = "http://localhost:8080/api/proprietaires"
-DISPONIBILITE_URL = "http://localhost:8080/api/disponibilites"
+BASE_URL = "http://localhost:8081/api/proprietaires"
 HEADERS = {"Content-Type": "application/json"}
 
 def get_all_proprietaires():
@@ -51,21 +50,6 @@ def delete_proprietaire(proprietaire_id):
         try:
             error_data = response.json()
             error_message = error_data.get('message', error_data.get('error', 'Erreur lors de la suppression du propriétaire'))
-        except:
-            error_message = f'Erreur {response.status_code}: {response.text}'
-        raise Exception(error_message)
-
-def get_horaires_occupes():
-    """
-    Récupère tous les horaires occupés depuis l'API Spring Boot
-    """
-    response = requests.get(f"{DISPONIBILITE_URL}/horaires-occupes", headers=HEADERS, timeout=10)
-    if response.status_code == 200:
-        return response.json()
-    else:
-        try:
-            error_data = response.json()
-            error_message = error_data.get('message', error_data.get('error', 'Erreur lors de la récupération des horaires occupés'))
         except:
             error_message = f'Erreur {response.status_code}: {response.text}'
         raise Exception(error_message)

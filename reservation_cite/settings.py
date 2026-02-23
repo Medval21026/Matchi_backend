@@ -104,67 +104,68 @@ WSGI_APPLICATION = 'reservation_cite.wsgi.application'
 #         },
 #     }
 # }
-
-#         'ENGINE': 'mysql.connector.django',
-#         'NAME': 'cite',
-#         'USER': 'root',
-#         'PASSWORD': '',
-#         'HOST': 'localhost',
-#         'PORT': '3306',
-#         'OPTIONS': {
-#             'sql_mode': 'STRICT_TRANS_TABLES',
-#         },
-#     }
-# }
-# Configuration de la base de données avec variables d'environnement
-# Pour Railway, utilisez les variables d'environnement
 DATABASES = {
     'default': {
-        'ENGINE': 'mysql.connector.django',  # Utiliser mysql.connector pour compatibilité avec Railway
-        'NAME': os.getenv('MYSQLDATABASE', 'cite'),
-        'USER': os.getenv('MYSQLUSER', 'root'),
-        'PASSWORD': os.getenv('MYSQLPASSWORD', ''),
-        'HOST': os.getenv('MYSQLHOST', 'localhost'),
-        'PORT': os.getenv('MYSQLPORT', '3306'),
+        'ENGINE': 'mysql.connector.django',
+        'NAME': 'cite',
+        'USER': 'root',
+        'PASSWORD': '',
+        'HOST': 'localhost',
+        'PORT': '3306',
         'OPTIONS': {
             'sql_mode': 'STRICT_TRANS_TABLES',
-            'charset': 'utf8mb4',
         },
     }
 }
+# Configuration de la base de données avec variables d'environnement
+# Pour Railway, utilisez les variables d'environnement
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'mysql.connector.django',  # Utiliser mysql.connector pour compatibilité avec Railway
+#         'NAME': os.getenv('MYSQLDATABASE', 'cite'),
+#         'USER': os.getenv('MYSQLUSER', 'root'),
+#         'PASSWORD': os.getenv('MYSQLPASSWORD', ''),
+#         'HOST': os.getenv('MYSQLHOST', 'localhost'),
+#         'PORT': os.getenv('MYSQLPORT', '3306'),
+#         'OPTIONS': {
+#             'sql_mode': 'STRICT_TRANS_TABLES',
+#             'charset': 'utf8mb4',
+#         },
+#     }
+# }
 
 
 # Si MYSQL_URL est fourni (format: mysql://user:password@host:port/database)
 # Ne l'utiliser QUE si on n'est pas en développement local
 # IMPORTANT: Toujours utiliser MYSQLDATABASE=cite si défini, même si MYSQL_URL est présent
-mysql_host = os.getenv('MYSQLHOST', '')
-mysql_url = os.getenv('MYSQL_URL') or os.getenv('MYSQL_PUBLIC_URL')
-mysql_database_explicit = os.getenv('MYSQLDATABASE')  # Variable explicitement définie
+# mysql_host = os.getenv('MYSQLHOST', '')
+# mysql_url = os.getenv('MYSQL_URL') or os.getenv('MYSQL_PUBLIC_URL')
+# mysql_database_explicit = os.getenv('MYSQLDATABASE')  # Variable explicitement définie
 
-# Utiliser MYSQL_URL seulement si MYSQLHOST n'est pas 'localhost' (pas de développement local)
-# MAIS forcer l'utilisation de MYSQLDATABASE si explicitement défini
-if mysql_url and mysql_host != 'localhost':
-    import re
-    # Parser l'URL MySQL
-    match = re.match(r'mysql://([^:]+):([^@]+)@([^:]+):(\d+)/(.+)', mysql_url)
-    if match:
-        user, password, host, port, database_from_url = match.groups()
-        # Si MYSQLDATABASE est explicitement défini, l'utiliser (priorité)
-        # Sinon, utiliser la base de l'URL
-        final_database = mysql_database_explicit if mysql_database_explicit else database_from_url
+# # Utiliser MYSQL_URL seulement si MYSQLHOST n'est pas 'localhost' (pas de développement local)
+# # MAIS forcer l'utilisation de MYSQLDATABASE si explicitement défini
+# if mysql_url and mysql_host != 'localhost':
+#     import re
+#     # Parser l'URL MySQL
+#     match = re.match(r'mysql://([^:]+):([^@]+)@([^:]+):(\d+)/(.+)', mysql_url)
+#     if match:
+#         user, password, host, port, database_from_url = match.groups()
+#         # Si MYSQLDATABASE est explicitement défini, l'utiliser (priorité)
+#         # Sinon, utiliser la base de l'URL
+#         final_database = mysql_database_explicit if mysql_database_explicit else database_from_url
         
-        DATABASES['default'] = {
-            'ENGINE': 'mysql.connector.django',
-            'NAME': final_database,  # Utilise MYSQLDATABASE si défini, sinon la base de l'URL
-            'USER': user,
-            'PASSWORD': password,
-            'HOST': host,
-            'PORT': port,
-            'OPTIONS': {
-                'sql_mode': 'STRICT_TRANS_TABLES',
-                'charset': 'utf8mb4',
-            },
-        }
+#         DATABASES['default'] = {
+#             'ENGINE': 'mysql.connector.django',
+#             'NAME': final_database,  # Utilise MYSQLDATABASE si défini, sinon la base de l'URL
+#             'USER': user,
+#             'PASSWORD': password,
+#             'HOST': host,
+#             'PORT': port,
+#             'OPTIONS': {
+#                 'sql_mode': 'STRICT_TRANS_TABLES',
+#                 'charset': 'utf8mb4',
+#             },
+#         }
 
 
 
@@ -229,3 +230,13 @@ CSRF_TRUSTED_ORIGINS = [
     'http://localhost:8000',
     'http://127.0.0.1:8000',
 ]
+
+# Configuration Kafka
+# Si localhost ne fonctionne pas, essayez 127.0.0.1:9094
+# Si Kafka est dans Docker, vérifiez les ports exposés
+KAFKA_BOOTSTRAP_SERVERS = os.getenv('KAFKA_BOOTSTRAP_SERVERS', '127.0.0.1:9094')
+KAFKA_CONFIG = {
+    'bootstrap_servers': KAFKA_BOOTSTRAP_SERVERS,
+    'client_id': 'django-reservation-app',
+}
+KAFKA_TOPIC = 'horaire-sync-topic'

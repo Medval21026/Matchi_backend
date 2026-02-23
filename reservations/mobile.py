@@ -19,7 +19,7 @@ import json
 import hashlib
 from .serializers import WilayeSerializer,ReservationSerializer_client,PeriodeSerializer
 from rest_framework import generics
-from datetime import time
+from datetime import time as dt_time
 from .models import Wilaye, Moughataa,Academie
 from .serializers import WilayeSerializer, MoughataaSerializer,AcademieSerializer
 
@@ -28,6 +28,7 @@ from .serializers import WilayeSerializer, MoughataaSerializer,IndisponibiliteSe
 from django.views.decorators.http import require_http_methods
 import requests
 import google.auth
+import time
 from google.oauth2 import service_account
 import google.auth.transport.requests
 import logging
@@ -200,29 +201,41 @@ def changePassword(request):
 
 
 
-
 @api_view(['POST'])
 def add_player(request):
     numero_telephone = request.data.get('numero_telephone')
     password = request.data.get('password')
     nom_joueur = request.data.get('nom')
     prenom_joueur = request.data.get('prenom')
-    #hashed_password = hashlib.md5(password.encode()).hexdigest()
 
-    try:
-        joueur = Joueurs.objects.create(
-    nom_joueur=nom_joueur,
-    prenom_joueur=prenom_joueur,
-    password=password,
-    numero_telephone=numero_telephone
-)
-        return Response({"message":"Done!"},status=201)
-        # if check_password(modepass_chiffre, client.modepass_chiffre):
-        #     return Response({'message': 'Login successful', 'client_id': client.id}, status=status.HTTP_200_OK)
-        # else:
-        #     return Response({'error': 'Invalid credentials'}, status=status.HTTP_400_BAD_REQUEST)
-    except Client.DoesNotExist:
-        return Response({'error': 'Client does not exist'}, status=status.HTTP_400_BAD_REQUEST)
+    # Validation des champs obligatoires
+    if not password:
+        return Response(
+            {"error": "Le mot de passe est obligatoire."},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    # Vérifier si le numéro existe déjà
+    if Joueurs.objects.filter(numero_telephone=numero_telephone).exists():
+        return Response(
+            {"error": "Le numéro de téléphone est déjà enregistré."},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    # Hasher le mot de passe (obligatoire pour la sécurité)
+    hashed_password = make_password(password)
+
+    # Création du joueur avec le mot de passe haché
+    # La méthode save() du modèle vérifiera que le mot de passe est déjà haché
+    # et ne le hachera pas à nouveau
+    joueur = Joueurs.objects.create(
+        nom_joueur=nom_joueur,
+        prenom_joueur=prenom_joueur,
+        password=hashed_password,
+        numero_telephone=numero_telephone
+    )
+
+    return Response({"message": "Joueur créé avec succès !"}, status=status.HTTP_201_CREATED)
 
 
 
@@ -545,6 +558,7 @@ def joueur_detail(request, joueur_id):
         'height': joueur.height,
         'weight': joueur.weight,
         'visible': joueur.visible,
+        'moughataa':moughataa_data,
         'wilaye': wilaye_data,  # Utiliser les données sérialisées'moughataa': moughataa_data,  # Utiliser les données sérialisées
     }
 
@@ -756,6 +770,7 @@ class AddIndisponibiliteView(View):
             date_indisponibilite = str(body.get('date_indisponibilite'))
             heure_fin_srt = str(body.get('heure_fin'))
             terrain_id = body.get('terrain')
+            id_jour = body.get('id_jour')  # Récupérer l'ID du joueur
 
             print("\n\n\n============================================", heure_indisponible)
 
@@ -772,12 +787,21 @@ class AddIndisponibiliteView(View):
                 ).delete()
             except Indisponibilites.DoesNotExist:
                 # Create a new entry if no existing one is found
-                Indisponibilites.objects.create(
-                    heure_debut=heure_debut,
-                    heure_fin=heure_fin,
-                    terrain_id=terrain_id,
-                    date_indisponibilite=date_indisponibilite
-                )
+                indisponibilite_data = {
+                    'heure_debut': heure_debut,
+                    'heure_fin': heure_fin,
+                    'terrain_id': terrain_id,
+                    'date_indisponibilite': date_indisponibilite
+                }
+                # Ajouter id_jour si fourni
+                if id_jour:
+                    try:
+                        joueur = Joueurs.objects.get(id=id_jour)
+                        indisponibilite_data['id_jour'] = joueur
+                    except Joueurs.DoesNotExist:
+                        pass  # Si le joueur n'existe pas, on crée l'indisponibilité sans id_jour
+                
+                Indisponibilites.objects.create(**indisponibilite_data)
 
             return JsonResponse({'message': 'Indisponibilité ajoutée avec succès'}, status=201)
 
@@ -1002,7 +1026,7 @@ def get_firebase_access_token():
         return access_token_cache
 
     # Chemin vers le fichier de compte de service
-    service_account_file = os.path.join(os.path.dirname(__file__), './matchinotfications-66fce5184564.json')
+    service_account_file = os.path.join(os.path.dirname(__file__), 'matchi-8543f-firebase-adminsdk-fbsvc-6c13949ae6.json')
 
     if not os.path.exists(service_account_file):
         print("Le fichier de compte de service est introuvable.")
@@ -1024,7 +1048,11 @@ def get_firebase_access_token():
 
         # Mise à jour du cache avec l'heure d'expiration
         access_token_cache = access_token
-        token_expiration_time = time.time() + credentials.expiry.timestamp() - time.time()
+        if credentials.expiry:
+            token_expiration_time = credentials.expiry.timestamp()
+        else:
+            # Si pas d'expiration définie, mettre 1 heure par défaut
+            token_expiration_time = time.time() + 3600
 
         print(f"Access Token généré: {access_token}")
         return access_token
@@ -1056,6 +1084,20 @@ def create_reservation_request(request):
         heure_debut_obj = datetime.strptime(heure_debut, format_heure)
         heure_fin_obj = datetime.strptime(heure_fin, format_heure)
 
+        indisponible = Indisponibilites.objects.filter(
+            terrain=terrain,
+            date_indisponibilite=date_reservation_obj
+        ).filter(
+            Q(heure_debut__lt=heure_fin_obj) &
+            Q(heure_fin__gt=heure_debut_obj)
+        ).exists()
+
+        if indisponible:
+            return Response(
+                {'error': 'Ce terrain est indisponible à cet horaire.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
         # Vérifier si une réservation existe déjà
         if DemandeReservation.objects.filter(
             joueur=joueur,
@@ -1077,7 +1119,13 @@ def create_reservation_request(request):
         demande.save()
 
         # Envoyer une notification au client
-        send_notification_to_client(terrain.client.fcm_token, joueur.nom_joueur, terrain.nom_fr)
+        messages_a_envoyer = [
+            {
+                'joueur_name': joueur.nom_joueur,
+                'terrain_name': terrain.nom_fr
+            }
+        ]
+        send_multiple_notifications_client(terrain.client.fcm_token, messages_a_envoyer)
 
         return Response({'message': 'Demande de réservation créée avec succès.'},
                         status=status.HTTP_201_CREATED)
@@ -1097,65 +1145,80 @@ def send_notification_to_client(fcm_token, joueur_name, terrain_name):
         print("FCM token manquant, notification non envoyée.")
         return
 
-    access_token = get_firebase_access_token()
-    if not access_token:
-        print("Impossible de récupérer le token Firebase.")
-        return
+    try:
+        access_token = get_firebase_access_token()
+        if not access_token:
+            print("Impossible de récupérer le token Firebase.")
+            return
 
-    headers = {
-        'Authorization': f'Bearer {access_token}',
-        'Content-Type': 'application/json; UTF-8',
-    }
+        headers = {
+            'Authorization': f'Bearer {access_token}',
+            'Content-Type': 'application/json; UTF-8',
+        }
 
-    notification = {
-        "message": {
-            "token": fcm_token,
-            "notification": {
-                "title": "Nouvelle réservation طلب حجز جديد",
-                "body": f"Le joueur {joueur_name} a demandé à réserver le terrain {terrain_name}.",
-            },
-            "data": {
-                "type": "reservation",
-                "joueur_name": joueur_name,
-                "terrain_name": terrain_name
+        notification = {
+            "message": {
+                "token": fcm_token,
+                "notification": {
+                    "title": "Nouvelle réservation طلب حجز جديد",
+                    "body": f"Le joueur {joueur_name} a demandé à réserver le terrain {terrain_name}.",
+                },
+                "data": {
+                    "type": "reservation",
+                    "joueur_name": joueur_name,
+                    "terrain_name": terrain_name
+                }
             }
         }
-    }
 
-    project_id = 'matchinotfications'
-    url = f'https://fcm.googleapis.com/v1/projects/{project_id}/messages:send'
+        project_id = 'matchi-8543f'
+        url = f'https://fcm.googleapis.com/v1/projects/{project_id}/messages:send'
 
-    print(f"Envoi de la requête à {url} avec les données : {notification}")
+        print(f"Envoi de la requête à {url} avec les données : {notification}")
 
-    response = requests.post(url, headers=headers, json=notification)
-    if response.status_code == 200:
-        print("Notification envoyée avec succès au client.")
-    else:
-        print(f"Échec de l'envoi de la notification: {response.status_code} - {response.text}")
+        response = requests.post(url, headers=headers, json=notification, timeout=30)
+        if response.status_code == 200:
+            print("Notification envoyée avec succès au client.")
+        else:
+            print(f"Échec de l'envoi de la notification: {response.status_code} - {response.text}")
+    except requests.exceptions.Timeout:
+        print("Timeout lors de l'envoi de la notification au client.")
+    except requests.exceptions.RequestException as e:
+        print(f"Erreur de requête lors de l'envoi de la notification au client: {e}")
+    except Exception as e:
+        print(f"Erreur inattendue lors de l'envoi de la notification au client: {e}")
+
+
 
 class DemandeReservationClientView(APIView):
     def get(self, request, client_id):
-        # Récupérer le client basé sur l'ID fourni
         client = get_object_or_404(Client, id=client_id)
 
-        # Obtenir la date et l'heure actuelles
         date_actuelle = now().date()
         heure_actuelle = now().time()
 
-        # Filtrer les réservations futures OU celles d'aujourd'hui dont l'heure n'est pas dépassée
         demandes = DemandeReservation.objects.filter(
             terrain__client=client
         ).filter(
-            date_reservation__gt=date_actuelle  # Garde les réservations après aujourd'hui
-        ) | DemandeReservation.objects.filter(
-            terrain__client=client,
-            date_reservation=date_actuelle,
-            heure_fin__gt=heure_actuelle  # Garde celles d'aujourd'hui dont l'heure de fin n'est pas passée
+            # Réservations futures
+            Q(date_reservation__gt=date_actuelle)
+
+            # Aujourd'hui et heure normale
+            | Q(
+                date_reservation=date_actuelle,
+                heure_fin__gt=heure_actuelle
+            )
+
+            # ✅ CAS SPÉCIAL 23h (TOUJOURS AFFICHER)
+            | Q(
+                date_reservation=date_actuelle,
+                heure_debut=dt_time(23, 0)
+            )
         ).order_by('date_reservation', 'heure_debut')
 
-        # Sérialisation et retour des données
         serializer = DemandeReservationSerializer(demandes, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
 @csrf_exempt
 def update_fcm_token_joueur(request, joueur_id):
     if request.method == 'PATCH':  # Utiliser PATCH au lieu de POST
@@ -1191,7 +1254,8 @@ def update_reservation_status(request, reservation_id):
         body_data = json.loads(body_unicode)
         new_status = body_data.get('status')
 
-        if new_status not in ['En attente', 'Acceptée', 'Refusée', 'Confirmée']:
+        # ✅ Ajouter "Annulée"
+        if new_status not in ['En attente', 'Acceptée', 'Refusée', 'Confirmée', 'Annulée']:
             return JsonResponse({'success': False, 'message': 'Statut invalide'}, status=400)
 
         terrain = demande.terrain
@@ -1200,7 +1264,7 @@ def update_reservation_status(request, reservation_id):
         # Trouver la période tarifaire
         if demande.heure_debut.hour == 23:
             periode = Periode.objects.filter(terrain=terrain).filter(
-                Q(heure_debut__gte=time(23, 0), heure_fin__lte=time(23, 59))
+                Q(heure_debut__gte=dt_time(23, 0), heure_fin__lte=dt_time(23, 59))
             ).first()
         else:
             periode = Periode.objects.filter(terrain=terrain).filter(
@@ -1209,14 +1273,16 @@ def update_reservation_status(request, reservation_id):
 
         if not periode:
             periode = Periode.objects.filter(terrain=terrain).filter(
-                Q(heure_debut__gte=time(23, 0), heure_fin__lte=time(1, 0)) |
-                Q(heure_debut__gte=time(0, 0), heure_fin__lt=time(5, 0))
+                Q(heure_debut__gte=dt_time(23, 0), heure_fin__lte=dt_time(1, 0)) |
+                Q(heure_debut__gte=dt_time(0, 0), heure_fin__lt=dt_time(5, 0))
             ).first()
 
         prix_applique = float(periode.prix) if periode else float(terrain.prix_par_heure or 0)
         reduction = 0.05 * prix_applique
 
-        # GESTION DU STATUT : ACCEPTÉE
+        # =========================
+        # ✅ ACCEPTÉE
+        # =========================
         if new_status == 'Acceptée':
             if demande.status == 'Acceptée':
                 return JsonResponse({'success': False, 'message': 'Cette demande est déjà acceptée.'}, status=400)
@@ -1246,7 +1312,8 @@ def update_reservation_status(request, reservation_id):
                     'message': 'Crédit insuffisant pour accepter la réservation.'
                 }, status=400)
 
-            Reservations.objects.create(
+            # Créer la réservation
+            reservation = Reservations.objects.create(
                 joueur=joueur,
                 terrain=terrain,
                 date_reservation=demande.date_reservation,
@@ -1254,8 +1321,32 @@ def update_reservation_status(request, reservation_id):
                 heure_fin=demande.heure_fin
             )
             print(f"Réservation créée pour la demande : {demande.id}")
+            
+            # Créer l'indisponibilité correspondante avec le joueur
+            # Désactiver temporairement le signal pour éviter les doublons Kafka
+            from django.db.models.signals import post_save, pre_delete
+            from .signals import indisponibilite_saved, indisponibilite_deleted
+            from .services.kafka_service import KafkaService
+            
+            post_save.disconnect(indisponibilite_saved, sender=Indisponibilites)
+            try:
+                indisponibilite = Indisponibilites.objects.create(
+                    terrain=terrain,
+                    id_jour=joueur,  # Associer le joueur à l'indisponibilité
+                    date_indisponibilite=demande.date_reservation,
+                    heure_debut=demande.heure_debut,
+                    heure_fin=demande.heure_fin
+                )
+                # Appeler Kafka manuellement
+                KafkaService.send_indisponibilite_event('CREATE', indisponibilite)
+                print(f"Indisponibilité créée pour la réservation : {indisponibilite.uuid}")
+            finally:
+                # Réactiver le signal
+                post_save.connect(indisponibilite_saved, sender=Indisponibilites)
 
-        # GESTION DU STATUT : CONFIRMÉE
+        # =========================
+        # ✅ CONFIRMÉE
+        # =========================
         elif new_status == 'Confirmée':
             if demande.status == 'Confirmée':
                 return JsonResponse({'success': False, 'message': 'Cette demande est déjà confirmée.'}, status=400)
@@ -1263,22 +1354,111 @@ def update_reservation_status(request, reservation_id):
             client.credie -= int(reduction)
             client.save()
 
-        # STATUTS AUTRES (Refusée / En attente)
-        else:
+        # =========================
+        # ✅ ANNULÉE (nouveau)
+        # =========================
+        elif new_status == 'Annulée':
+            # Supprimer les réservations
             Reservations.objects.filter(
                 joueur=demande.joueur,
                 terrain=demande.terrain,
                 date_reservation=demande.date_reservation,
                 heure_debut=demande.heure_debut
             ).delete()
-            print("Réservation supprimée si elle existait.")
+            
+            # Récupérer les indisponibilités avant suppression pour envoyer les messages Kafka
+            from django.db.models.signals import pre_delete
+            from .signals import indisponibilite_deleted
+            from .services.kafka_service import KafkaService
+            
+            indisponibilites_a_supprimer = Indisponibilites.objects.filter(
+                terrain=demande.terrain,
+                date_indisponibilite=demande.date_reservation,
+                heure_debut=demande.heure_debut,
+                heure_fin=demande.heure_fin,
+                id_jour=demande.joueur
+            )
+            
+            # Désactiver temporairement le signal pour éviter les doublons
+            pre_delete.disconnect(indisponibilite_deleted, sender=Indisponibilites)
+            try:
+                for indisponibilite in indisponibilites_a_supprimer:
+                    # Appeler Kafka manuellement avant suppression
+                    KafkaService.send_indisponibilite_event('DELETE', indisponibilite)
+                
+                # Supprimer les indisponibilités
+                indisponibilites_a_supprimer.delete()
+                print("Réservation et indisponibilité annulées et supprimées.")
+            finally:
+                # Réactiver le signal
+                pre_delete.connect(indisponibilite_deleted, sender=Indisponibilites)
 
-        # Mise à jour du statut
+        # =========================
+        # ✅ REFUSÉE seulement
+        # =========================
+        elif new_status == 'Refusée':
+            # Supprimer les réservations
+            Reservations.objects.filter(
+                joueur=demande.joueur,
+                terrain=demande.terrain,
+                date_reservation=demande.date_reservation,
+                heure_debut=demande.heure_debut
+            ).delete()
+            
+            # Récupérer les indisponibilités avant suppression pour envoyer les messages Kafka
+            from django.db.models.signals import pre_delete
+            from .signals import indisponibilite_deleted
+            from .services.kafka_service import KafkaService
+            
+            indisponibilites_a_supprimer = Indisponibilites.objects.filter(
+                terrain=demande.terrain,
+                date_indisponibilite=demande.date_reservation,
+                heure_debut=demande.heure_debut,
+                heure_fin=demande.heure_fin,
+                id_jour=demande.joueur
+            )
+            
+            # Désactiver temporairement le signal pour éviter les doublons
+            pre_delete.disconnect(indisponibilite_deleted, sender=Indisponibilites)
+            try:
+                for indisponibilite in indisponibilites_a_supprimer:
+                    # Appeler Kafka manuellement avant suppression
+                    KafkaService.send_indisponibilite_event('DELETE', indisponibilite)
+                
+                # Supprimer les indisponibilités
+                indisponibilites_a_supprimer.delete()
+                print("Réservation et indisponibilité refusées et supprimées.")
+            finally:
+                # Réactiver le signal
+                pre_delete.connect(indisponibilite_deleted, sender=Indisponibilites)
+
+        # =========================
+        # UPDATE STATUS
+        # =========================
         demande.status = new_status
         demande.save()
 
-        # Notification au joueur
-        send_notification_to_joueur(demande.joueur.fcm_tokenjoueur, new_status, demande.terrain.nom_fr)
+        # =========================
+        # 🔕 Notification (pas pour confirmée)
+        # =========================
+        if new_status != 'Confirmée':
+            messages_a_envoyer = [
+                {
+                    'status': new_status,
+                    'terrain_name': demande.terrain.nom_fr,
+                    'heure_debut': demande.heure_debut,
+                    'heure_fin': demande.heure_fin
+                }
+            ]
+
+            send_multiple_notifications(
+                demande.joueur.fcm_tokenjoueur,
+                messages_a_envoyer
+            )
+
+
+
+
 
         return JsonResponse({
             'success': True,
@@ -1294,13 +1474,69 @@ def update_reservation_status(request, reservation_id):
         return JsonResponse({'success': False, 'message': f'Erreur inattendue: {str(e)}'}, status=500)
 
 
+from datetime import time as dt_time
+import requests
 
+def send_multiple_notifications(fcm_token, messages_info):
 
+    if not fcm_token:
+        print("FCM token manquant")
+        return
 
+    access_token = get_firebase_access_token()
 
-def send_notification_to_joueur(fcm_token, status, terrain_name):
+    headers = {
+        'Authorization': f'Bearer {access_token}',
+        'Content-Type': 'application/json; UTF-8',
+    }
+
+    # ✅ format sécurisé
+    def format_time(t):
+        if isinstance(t, dt_time):
+            return t.strftime("%H:%M")
+        return ""
+
+    url = "https://fcm.googleapis.com/v1/projects/matchi-8543f/messages:send"
+
+    for info in messages_info:
+        status = str(info.get('status', ''))
+        terrain_name = info.get('terrain_name', '')
+
+        heure_debut = info.get('heure_debut')
+        heure_fin = info.get('heure_fin')
+
+        hd = format_time(heure_debut)
+        hf = format_time(heure_fin)
+
+        body = f"{terrain_name} {status}"
+
+        if hd and hf:
+            body += f" {hd}-{hf}"
+
+        data = {
+            "message": {
+                "token": fcm_token,
+                "notification": {
+                    "title": "Réservation",
+                    "body": body
+                }
+            }
+        }
+
+        try:
+            response = requests.post(url, headers=headers, json=data, timeout=30)
+
+            if response.status_code == 200:
+                print(f"Notification envoyée : {body}")
+            else:
+                print(f"Erreur FCM {response.status_code}: {response.text}")
+
+        except Exception as e:
+            print(f"Erreur envoi notification: {e}")
+
+def send_multiple_notifications_client(fcm_token, messages_info):
     """
-    Envoie une notification au joueur via Firebase Cloud Messaging.
+    Envoie plusieurs notifications au client via Firebase Cloud Messaging.
     """
     if not fcm_token:
         print("FCM token manquant, notification non envoyée.")
@@ -1317,37 +1553,45 @@ def send_notification_to_joueur(fcm_token, status, terrain_name):
             'Content-Type': 'application/json; UTF-8',
         }
 
-        # Corps de la notification
-        body_message = f"Votre demande pour le terrain {terrain_name} a été {status.lower()}."
-        notification = {
-            "message": {
-                "token": fcm_token,
-                "notification": {
-                    "title": "Mise à jour de votre réservation تحديث حجزك",
-                    "body": body_message
-                },
-                "data": {
-                    "type": "reservation_status_update ",
-                    "status": status,
-                    "terrain_name": terrain_name
-                }
-            }
-        }
-
-        project_id = 'matchinotfications'
+        project_id = 'matchi-8543f'
         url = f'https://fcm.googleapis.com/v1/projects/{project_id}/messages:send'
 
-        print(f"Envoi de la requête à {url} avec les données : {notification}")
+        for info in messages_info:
+            joueur_name = info.get('joueur_name', '')
+            terrain_name = info.get('terrain_name', '')
 
-        # Envoi de la requête
-        response = requests.post(url, headers=headers, json=notification)
-        if response.status_code == 200:
-            print("Notification envoyée avec succès au joueur.")
-        else:
-            print(f"Échec de l'envoi de la notification: {response.status_code} - {response.text}")
+            notification = {
+                "message": {
+                    "token": fcm_token,
+                    "notification": {
+                        "title": "Nouvelle réservation طلب حجز جديد",
+                        "body": f"Le joueur {joueur_name} a demandé à réserver le terrain {terrain_name}.",
+                    },
+                    "data": {
+                        "type": "reservation",
+                        "joueur_name": joueur_name,
+                        "terrain_name": terrain_name
+                    }
+                }
+            }
+
+            print(f"Envoi de la requête à {url} avec les données : {notification}")
+
+            try:
+                response = requests.post(url, headers=headers, json=notification, timeout=30)
+                if response.status_code == 200:
+                    print(f"Notification envoyée avec succès au client : {joueur_name} - {terrain_name}")
+                else:
+                    print(f"Échec de l'envoi de la notification: {response.status_code} - {response.text}")
+            except requests.exceptions.Timeout:
+                print("Timeout lors de l'envoi de la notification au client.")
+            except requests.exceptions.RequestException as e:
+                print(f"Erreur de requête lors de l'envoi de la notification au client: {e}")
+            except Exception as e:
+                print(f"Erreur inattendue lors de l'envoi de la notification au client: {e}")
 
     except Exception as e:
-        print(f"Erreur lors de l'envoi de la notification : {e}")
+        print(f"Erreur inattendue lors de l'envoi des notifications au client: {e}")
 
 
 def nombre_reservations_confirmees(request, client_id):
@@ -1469,55 +1713,190 @@ def heures_disponibles_for_player(request, terrain_id, date):
 
 
 
+def calcul_prix(terrain, heure_debut, heure_fin):
+    """
+    Calcule le prix d'une réservation en fonction du terrain et de l'heure.
+    Gère le créneau spécial 23h et les périodes traversant minuit.
+    """
+    # Cas spécial 23h
+    if heure_debut.hour == 23:
+        periode = Periode.objects.filter(
+            terrain=terrain,
+            heure_debut__lte=dt_time(23, 0),
+            heure_fin__gte=dt_time(23, 0)
+        ).first()
+    else:
+        # Cherche la période normale
+        periode = Periode.objects.filter(
+            terrain=terrain,
+            heure_debut__lte=heure_debut,
+            heure_fin__gte=heure_fin
+        ).first()
 
+    if not periode:
+        # Cas traversant minuit ou période spéciale
+        periode = Periode.objects.filter(
+            terrain=terrain
+        ).filter(
+            Q(heure_debut__gte=dt_time(23, 0), heure_fin__lte=dt_time(1, 0)) |
+            Q(heure_debut__gte=dt_time(0, 0), heure_fin__lt=dt_time(5, 0))
+        ).first()
+
+    # Si aucune période trouvée, utiliser prix par défaut du terrain
+    if periode:
+        prix_applique = float(periode.prix)
+    else:
+        prix_applique = float(terrain.prix_par_heure or 0)
+
+    return prix_applique
+
+from django.utils import timezone
 
 def get_reservations_par_joueur(request, joueur_id):
     joueur = get_object_or_404(Joueurs, id=joueur_id)
-    reservations = Reservations.objects.filter(joueur=joueur).order_by('date_reservation', 'heure_debut')
+
+    now = timezone.now()
+    today = now.date()
+    current_time = now.time()
 
     reservations_data = []
 
+    # 1️⃣ Réservations confirmées (non expirées)
+    # Inclure toutes les réservations futures et celles d'aujourd'hui qui ne sont pas encore expirées
+    # Cas spécial : les réservations 23h-00h d'aujourd'hui ne sont pas expirées tant qu'on n'a pas dépassé 23h59
+    
+    # Réservations 23h-00h d'aujourd'hui - toujours inclure (elles expirent après 23h59)
+    reservations_23h_today = Reservations.objects.filter(
+        joueur=joueur,
+        date_reservation=today,
+        heure_debut__hour=23,
+        heure_fin__hour=0
+    )
+    
+    # Réservations futures
+    reservations_future = Reservations.objects.filter(
+        joueur=joueur,
+        date_reservation__gt=today
+    )
+    
+    # Réservations d'aujourd'hui (non 23h-00h) qui ne sont pas encore expirées
+    reservations_today = Reservations.objects.filter(
+        joueur=joueur,
+        date_reservation=today
+    ).exclude(
+        heure_debut__hour=23,
+        heure_fin__hour=0
+    ).filter(
+        heure_fin__gte=current_time
+    )
+    
+    # Réservations passées (hier et avant) - exclure celles qui sont expirées
+    # Mais garder les réservations 23h-00h d'hier si on est juste après minuit (00h-00h59)
+    reservations_past = Reservations.objects.none()
+    if current_time.hour == 0:
+        # Si on est juste après minuit, inclure les réservations 23h-00h d'hier
+        yesterday = today - timedelta(days=1)
+        reservations_23h_yesterday = Reservations.objects.filter(
+            joueur=joueur,
+            date_reservation=yesterday,
+            heure_debut__hour=23,
+            heure_fin__hour=0
+        )
+        reservations_past = reservations_23h_yesterday
+    
+    # Combiner toutes les réservations
+    reservations = (reservations_23h_today | reservations_future | reservations_today | reservations_past)\
+        .select_related('terrain')\
+        .order_by('date_reservation', 'heure_debut')
+
     for reservation in reservations:
-        heure_debut = reservation.heure_debut
-        heure_fin = reservation.heure_fin
-
-        # Vérifier si l'heure_debut est exactement 23h
-        if heure_debut.hour == 23:
-            periode = Periode.objects.filter(terrain=reservation.terrain).filter(
-                Q(heure_debut__gte=time(23, 0), heure_fin__lte=time(23, 59))  # Cas où heure_debut = 23h
-            ).first()
-            print(f"Période trouvée à 23h : {periode}")
-        else:
-            # Cas normal pour d'autres heures
-            periode = Periode.objects.filter(terrain=reservation.terrain).filter(
-                Q(heure_debut__lte=heure_debut, heure_fin__gte=heure_fin)
-            ).first()
-            print(f"Période trouvée dans le cas normal: {periode}")
-
-        if not periode:
-            # Cas où aucune période n'a été trouvée, vérifier les périodes traversant minuit
-            periode = Periode.objects.filter(terrain=reservation.terrain).filter(
-                Q(heure_debut__gte=time(23, 0), heure_fin__lte=time(1, 0)) |
-                Q(heure_debut__gte=time(0, 0), heure_fin__lt=time(5, 0))
-            ).first()
-            print(f"Période trouvée dans le cas traversant minuit: {periode}")
-
-        # Si aucune période n'est trouvée, utiliser le prix par heure du terrain
-        prix = float(periode.prix) if periode else float(reservation.terrain.prix_par_heure or 0)
-        print(f"Prix utilisé: {prix}")
+        prix = calcul_prix(
+            reservation.terrain,
+            reservation.heure_debut,
+            reservation.heure_fin
+        )
 
         reservations_data.append({
             'terrain_Ar': reservation.terrain.nom_ar,
             'terrain_fr': reservation.terrain.nom_fr,
             'lieu_Ar': reservation.terrain.lieu_ar,
             'lieu_fr': reservation.terrain.lieu_fr,
-            'prix': prix,  # Prix basé sur la période si elle existe
+            'prix': prix,
             'date_reservation': reservation.date_reservation,
             'heure_debut': reservation.heure_debut,
-            'heure_fin': reservation.heure_fin
+            'heure_fin': reservation.heure_fin,
+            'status': 'Acceptée'
         })
 
-    return JsonResponse({'joueur': joueur.nom_joueur, 'reservations': reservations_data})
+    # 2️⃣ Demandes en attente NON expirées seulement
+    # Cas spécial : réservation 23h-00h (minuit)
+    # Une réservation 23h-00h d'aujourd'hui n'est pas expirée tant qu'on est encore le jour de la réservation
+    # Elle expire seulement après 23h59, donc elle doit être incluse pour tous les jours (pas seulement à 23h)
+    
+    # Inclure TOUTES les réservations 23h-00h d'aujourd'hui (peu importe l'heure actuelle, tant qu'on est encore aujourd'hui)
+    demandes_23h_today = DemandeReservation.objects.filter(
+        joueur=joueur,
+        status='En attente',
+        date_reservation=today,
+        heure_debut__hour=23,
+        heure_fin__hour=0
+    )
+    
+    # Inclure les réservations 23h-00h des jours futurs
+    demandes_23h_future = DemandeReservation.objects.filter(
+        joueur=joueur,
+        status='En attente',
+        date_reservation__gt=today,
+        heure_debut__hour=23,
+        heure_fin__hour=0
+    )
+    
+    # Combiner toutes les réservations 23h-00h
+    demandes_23h = demandes_23h_today | demandes_23h_future
+
+    # Demandes normales (non expirées) - exclure les créneaux 23h-00h qui sont gérés séparément
+    demandes_normales = DemandeReservation.objects.filter(
+        joueur=joueur,
+        status='En attente'
+    ).filter(
+        Q(date_reservation__gt=today) |
+        Q(date_reservation=today, heure_fin__gte=current_time)
+    ).exclude(
+        heure_debut__hour=23,
+        heure_fin__hour=0
+    )
+
+    # Combiner les deux querysets
+    demandes = (demandes_23h | demandes_normales).select_related('terrain').order_by('-date_demande')
+
+    for demande in demandes:
+        prix = calcul_prix(
+            demande.terrain,
+            demande.heure_debut,
+            demande.heure_fin
+        )
+
+        reservations_data.append({
+            'terrain_Ar': demande.terrain.nom_ar,
+            'terrain_fr': demande.terrain.nom_fr,
+            'lieu_Ar': demande.terrain.lieu_ar,
+            'lieu_fr': demande.terrain.lieu_fr,
+            'prix': prix,
+            'date_reservation': demande.date_reservation,
+            'heure_debut': demande.heure_debut,
+            'heure_fin': demande.heure_fin,
+            'status': demande.status
+        })
+
+    # 🔥 Trier tout
+    reservations_data.sort(key=lambda x: (x['date_reservation'], x['heure_debut']))
+
+    return JsonResponse({
+        'joueur': joueur.nom_joueur,
+        'reservations': reservations_data
+    })
+
+
 
 
 
@@ -1850,7 +2229,42 @@ def change_password(request, phone_number):
 
 
 @api_view(['GET'])
+def get_latest_versions(request):
+    """
+    Récupère les dernières versions pour Matchi et Client en une seule requête.
+    Peut également publier un événement Kafka si nécessaire.
+    """
+    try:
+        # Récupérer les dernières versions
+        latest_matchi = Version.objects.order_by('-versionNumber').first()
+        latest_client = VersionClient.objects.order_by('-versionNumber').first()
+        
+        response_data = {}
+        
+        if latest_matchi:
+            response_data['matchi_version'] = latest_matchi.versionNumber
+        else:
+            response_data['matchi_version'] = None
+            
+        if latest_client:
+            response_data['client_version'] = latest_client.versionNumber
+        else:
+            response_data['client_version'] = None
+        
+        # Si aucune version trouvée
+        if not latest_matchi and not latest_client:
+            return JsonResponse({'error': 'Aucune version trouvée'}, status=404)
+        
+        return JsonResponse(response_data, status=200)
+        
+    except Exception as e:
+        return JsonResponse({'error': f'Erreur lors de la récupération des versions: {str(e)}'}, status=500)
+
+@api_view(['GET'])
 def get_latest_version_matchi(request):
+    """
+    Récupère uniquement la dernière version Matchi (conservé pour compatibilité).
+    """
     latest = Version.objects.order_by('-versionNumber').first()
     if latest:
         return JsonResponse({'versionNumber': latest.versionNumber})
@@ -1858,7 +2272,15 @@ def get_latest_version_matchi(request):
 
 @api_view(['GET'])
 def get_latest_version_client(request):
+    """
+    Récupère uniquement la dernière version Client (conservé pour compatibilité).
+    """
     latest = VersionClient.objects.order_by('-versionNumber').first()
     if latest:
         return JsonResponse({'versionNumber': latest.versionNumber})
     return JsonResponse({'error': 'No versions found'}, status=404)
+
+@api_view(['GET'])
+def check_numero(request, numero_telephone):
+    existe = Joueurs.objects.filter(numero_telephone=numero_telephone).exists()
+    return Response({"action": existe})

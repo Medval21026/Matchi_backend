@@ -45,11 +45,11 @@ urlpatterns = [
     path('page_acceuil/', views.page_acceuil, name='page_acceuil'),
     path('index', mobile.index , name='index'),
 #    path('ajouter_cite', mobile.ajouter_cite , name='ajouter_cite'),
-   path('gestion_client', mobile.gestion_client , name='gestion_client'),
+    path('gestion_client', mobile.gestion_client , name='gestion_client'),
 #    path('gestion_cite', mobile.gestion_cite , name='gestion_cite'),
 #    path('modifier_client/', mobile.modifier_client, name='modifier_client'),
-   path('supprimer_client/', mobile.supprimer_client, name='supprimer_client'),
-   path('ajouter_client/', mobile.ajouter_client, name='ajouter_client'),
+    path('supprimer_client/', mobile.supprimer_client, name='supprimer_client'),
+    path('ajouter_client/', mobile.ajouter_client, name='ajouter_client'),
 #    path('modifier_cite/<int:cite_id>/', mobile.modifier_cite, name='modifier_cite'),
 #    path('supprimer_cite/<int:cite_id>/', mobile.supprimer_cite, name='supprimer_cite'),
     # path('', mobile.page_acceuil , name='page_acceuil'),
@@ -57,6 +57,7 @@ urlpatterns = [
     path('login/', mobile.login_client, name='login_client'),
     path('getPassword/', mobile.getPassword, name='getPassword'),
     path('changePassword/', mobile.changePassword, name='changePassword'),
+    path('CheckNumero/<str:numero_telephone>/', mobile.check_numero, name='CheckNumero'),
 
 
 
@@ -93,12 +94,10 @@ urlpatterns = [
     path('liste_heure_indisponible', views.liste_heure_indisponible, name='liste_heure_indisponible'),
     path('supprimer_heure/<int:heure_id>/', views.supprimer_heure_indisponible, name='supprimer_heure_indisponible'),
     path('modifier_heure_indisponible/<int:heure_id>/', views.modifier_heure_indisponible, name='modifier_heure_indisponible'),
-     path('versions/', views.liste_versions, name='liste_versions'),
+    path('versions/', views.liste_versions, name='liste_versions'),
     path('versions/add/', views.ajouter_version, name='ajouter_version'),
     path('versions/update/<int:id>/', views.modifier_version, name='modifier_version'),
     path('versions/delete/<int:id>/', views.supprimer_version, name='supprimer_version'),
-    path('synchronisation/', views.page_synchronisation, name='page_synchronisation'),
-    path('synchroniser-horaires/', views.synchroniser_horaires_occupes, name='synchroniser_horaires_occupes'),
 
 
 
@@ -134,8 +133,11 @@ urlpatterns = [
     path('cancel_reservation/<int:reservation_id>/', mobile.cancel_reservation, name='cancel_reservation'),
     path('api/version/', mobile.get_version, name='get_version'),
     path('change_password/<str:phone_number>/', mobile.change_password, name='change_password'),
+    # Nouvelle route unifiée pour obtenir les deux versions
+    path('api/get_latest_versions/', mobile.get_latest_versions, name='get_latest_versions'),
+    # Routes individuelles conservées pour compatibilité
     path('api/get_latest_version/matchi', mobile.get_latest_version_matchi, name='get_latest_version_matchi'),
-    path('api/get_latest_version/client', mobile.get_latest_version_client, name='get_latest_version'),
+    path('api/get_latest_version/client', mobile.get_latest_version_client, name='get_latest_version_client'),
 
 ]
 

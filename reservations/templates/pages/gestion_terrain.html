@@ -151,31 +151,57 @@ $('#searchCite').on('input', function () {
 
 /* ===== CRUD ===== */
 window.afficherModalModification = function(terrain_id) 
-{ var terrain = $("#terrain" + terrain_id).data(); $('#terrain_id').val(terrain_id);
-$('#nom_fr_modifier').val(terrain.nom_fr); 
-$('#nom_ar_modifier').val(terrain.nom_ar); 
-$('#longitude_modifier').val(terrain.longitude);
-$('#latitude_modifier').val(terrain.latitude); 
-$('#nombre_joueur_modifier').val(terrain.nombre_joueur);
-$('#lieu_fr_modifier').val(terrain.lieu_fr);
-$('#lieu_ar_modifier').val(terrain.lieu_ar); 
-$('#prix_par_heure_modifier').val(terrain.prix_par_heure); 
-$('#client_modifier').val(terrain.numero_telephone);
-$('#Wilaye_modifier').val(terrain.wilaye_id); 
-$('#Moughataa_modifier').val(terrain.moughataa_id);
-$('#heure_ouverture_modifier').val(terrain.heure_ouverture);
-$('#heure_fermeture_modifier').val(terrain.heure_fermeture); 
-$('#ballon_disponible_true_modifier').prop('checked', terrain.ballon_disponible === 'True'); 
-$('#ballon_disponible_false_modifier').prop('checked', terrain.ballon_disponible === 'False');
-$('#gazon_artificiel_true_modifier').prop('checked', terrain.gazon_artificiel === 'True'); 
-$('#gazon_artificiel_false_modifier').prop('checked', terrain.gazon_artificiel === 'False');
-$('#eau_true_modifier').prop('checked', terrain.parking === 'True'); $('#eau_false_modifier').prop('checked', terrain.parking === 'False'); 
-$('#parking_true_modifier').prop('checked', terrain.parking === 'True'); $('#parking_false_modifier').prop('checked', terrain.parking === 'False'); 
-$('#siffler_true_modifier').prop('checked', terrain.siffler === 'True'); $('#siffler_false_modifier').prop('checked', terrain.siffler === 'False'); 
-$('#maillot_disponible_true_modifier').prop('checked', terrain.maillot_disponible === 'True'); $('#maillot_disponible_false_modifier').prop('checked', terrain.maillot_disponible === 'False'); 
-$('#eclairage_disponible_true_modifier').prop('checked', terrain.eclairage_disponible === 'True'); $('#eclairage_disponible_false_modifier').prop('checked', terrain.eclairage_disponible === 'False');
-$('#sonorisation_disponible_true_modifier').prop('checked', terrain.sonorisation_disponible === 'True'); $('#sonorisation_disponible_false_modifier').prop('checked', terrain.sonorisation_disponible === 'False');
-$('#modifierCiteModal').modal('show'); var formAction = "{% url 'modifier_terrain' 0 %}".replace('/0/', '/' + terrain_id + '/'); $('#modifierCiteForm').attr('action', formAction); };
+{ 
+    // Fermer le modal de détail
+    var detailModalElement = document.getElementById('details' + terrain_id);
+    if (detailModalElement) {
+        var detailModal = bootstrap.Modal.getInstance(detailModalElement);
+        if (detailModal) {
+            detailModal.hide();
+        }
+    }
+    
+    var terrain = $("#terrain" + terrain_id).data(); 
+    $('#terrain_id').val(terrain_id);
+    $('#nom_fr_modifier').val(terrain.nom_fr); 
+    $('#nom_ar_modifier').val(terrain.nom_ar); 
+    $('#longitude_modifier').val(terrain.longitude);
+    $('#latitude_modifier').val(terrain.latitude); 
+    $('#nombre_joueur_modifier').val(terrain.nombre_joueur);
+    $('#lieu_fr_modifier').val(terrain.lieu_fr);
+    $('#lieu_ar_modifier').val(terrain.lieu_ar); 
+    $('#prix_par_heure_modifier').val(terrain.prix_par_heure); 
+    $('#client_modifier').val(terrain.numero_telephone);
+    $('#Wilaye_modifier').val(terrain.wilaye_id); 
+    $('#Moughataa_modifier').val(terrain.moughataa_id);
+    $('#heure_ouverture_modifier').val(terrain.heure_ouverture);
+    $('#heure_fermeture_modifier').val(terrain.heure_fermeture); 
+    $('#ballon_disponible_true_modifier').prop('checked', terrain.ballon_disponible === 'True'); 
+    $('#ballon_disponible_false_modifier').prop('checked', terrain.ballon_disponible === 'False');
+    $('#gazon_artificiel_true_modifier').prop('checked', terrain.gazon_artificiel === 'True'); 
+    $('#gazon_artificiel_false_modifier').prop('checked', terrain.gazon_artificiel === 'False');
+    $('#eau_true_modifier').prop('checked', terrain.parking === 'True'); 
+    $('#eau_false_modifier').prop('checked', terrain.parking === 'False'); 
+    $('#parking_true_modifier').prop('checked', terrain.parking === 'True'); 
+    $('#parking_false_modifier').prop('checked', terrain.parking === 'False'); 
+    $('#siffler_true_modifier').prop('checked', terrain.siffler === 'True'); 
+    $('#siffler_false_modifier').prop('checked', terrain.siffler === 'False'); 
+    $('#maillot_disponible_true_modifier').prop('checked', terrain.maillot_disponible === 'True'); 
+    $('#maillot_disponible_false_modifier').prop('checked', terrain.maillot_disponible === 'False'); 
+    $('#eclairage_disponible_true_modifier').prop('checked', terrain.eclairage_disponible === 'True'); 
+    $('#eclairage_disponible_false_modifier').prop('checked', terrain.eclairage_disponible === 'False');
+    $('#sonorisation_disponible_true_modifier').prop('checked', terrain.sonorisation_disponible === 'True'); 
+    $('#sonorisation_disponible_false_modifier').prop('checked', terrain.sonorisation_disponible === 'False');
+    
+    // Ouvrir le modal de modification après un court délai pour s'assurer que le modal de détail est fermé
+    setTimeout(function() {
+        var modifierModal = new bootstrap.Modal(document.getElementById('modifierCiteModal'));
+        modifierModal.show();
+    }, 300);
+    
+    var formAction = "{% url 'modifier_terrain' 0 %}".replace('/0/', '/' + terrain_id + '/'); 
+    $('#modifierCiteForm').attr('action', formAction); 
+};
 
 function SuprimerCite(id){
     if(!confirm("Supprimer ce terrain ?")) return;

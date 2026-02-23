@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth.hashers import make_password
+import uuid
 
 class Client(models.Model):
     nom = models.CharField(max_length=100)
@@ -67,8 +68,11 @@ class Joueurs(models.Model):
 
 
     def save(self, *args, **kwargs):
+        # Hacher le mot de passe seulement s'il n'est pas déjà haché
         if self.password and not self.pk:
-            self.password = make_password(self.password)
+            # Vérifier si le mot de passe est déjà haché (commence par pbkdf2_sha256$)
+            if not self.password.startswith('pbkdf2_sha256$'):
+                self.password = make_password(self.password)
         super().save(*args, **kwargs)
 
 
@@ -81,10 +85,18 @@ class Reservations(models.Model):
 
 
 class Indisponibilites(models.Model):
+    uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True, db_index=True)
     terrain = models.ForeignKey(Terrains, on_delete=models.CASCADE)
+    id_jour = models.ForeignKey(Joueurs, on_delete=models.CASCADE, null=True, blank=True, related_name='indisponibilites')
     date_indisponibilite = models.DateField()
     heure_debut = models.TimeField()
     heure_fin = models.TimeField()
+    
+    class Meta:
+        unique_together = [['terrain', 'date_indisponibilite', 'heure_debut', 'heure_fin']]
+    
+    def __str__(self):
+        return f"Indisponibilité {self.uuid} - Terrain {self.terrain.nom_fr} - {self.date_indisponibilite}"
 
 
 
@@ -154,6 +166,7 @@ class Periode(models.Model):
 
 
 class Indisponibles_tous_temps(models.Model):
+    uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True, db_index=True)
     heure_debut = models.TimeField()
     heure_fin = models.TimeField()
     terrain = models.ForeignKey(
@@ -161,6 +174,9 @@ class Indisponibles_tous_temps(models.Model):
         on_delete=models.CASCADE,
         related_name='heures_indisponibles'
     )
+    
+    class Meta:
+        unique_together = [['terrain', 'heure_debut', 'heure_fin']]
 
 class VersionClient(models.Model):
     versionNumber = models.IntegerField()
