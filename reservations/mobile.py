@@ -271,12 +271,24 @@ def get_terrain_info(request, client_id):
 @api_view(['GET'])
 def get_all_terrains(request):
     try:
+        # Récupérer le numéro de page depuis les paramètres de requête (par défaut page 1)
+        page = int(request.query_params.get('page', 1))
+        page_size = 10
+        
         # Récupérer tous les terrains avec les objets liés
         terrains = Terrains.objects.all().select_related('wilaye', 'moughataa')
+        total_terrains = terrains.count()
+        
+        # Calculer l'offset pour la pagination
+        offset = (page - 1) * page_size
+        
+        # Récupérer les terrains de la page actuelle
+        terrains_page = terrains[offset:offset + page_size]
+        
         terrain_list = []
 
         # Parcourir chaque terrain et construire la réponse
-        for terrain in terrains:
+        for terrain in terrains_page:
             terrain_data = {
                 'id': terrain.id,
                 'nom_fr': terrain.nom_fr,
@@ -308,9 +320,27 @@ def get_all_terrains(request):
             }
             terrain_list.append(terrain_data)
 
-        return Response(terrain_list, status=status.HTTP_200_OK)
-    except Exception as e:
-        return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        # Calculer le nombre total de pages
+        total_pages = (total_terrains + page_size - 1) // page_size
+        
+        # Préparer la réponse avec les informations de pagination
+        response_data = {
+            'results': terrain_list,
+            'pagination': {
+                'page': page,
+                'page_size': page_size,
+                'total': total_terrains,
+                'total_pages': total_pages,
+                'has_next': page < total_pages,
+                'has_previous': page > 1,
+                'next_page': page + 1 if page < total_pages else None,
+                'previous_page': page - 1 if page > 1 else None
+            }
+        }
+
+        return Response(response_data, status=status.HTTP_200_OK)
+    except ValueError:
+        return Response({'error': 'Le paramètre page doit être un nombre valide'}, status=status.HTTP_400_BAD_REQUEST)
     except Exception as e:
         return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 class TerrainViewSet(viewsets.ModelViewSet):
@@ -324,6 +354,14 @@ class TerrainViewSet(viewsets.ModelViewSet):
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
+from rest_framework.pagination import PageNumberPagination
+
+
+# Classe de pagination personnalisée pour 10 éléments par page
+class StandardResultsSetPagination(PageNumberPagination):
+    page_size = 10
+    page_size_query_param = 'page_size'
+    max_page_size = 100
 from datetime import datetime
 
 
@@ -538,8 +576,8 @@ class JoueurCreateView(APIView):
 
 class JoueursListView(generics.ListCreateAPIView):
     queryset = Joueurs.objects.filter(visible=True)
-
     serializer_class = JoueurSerializer
+    pagination_class = StandardResultsSetPagination
 
 def joueur_detail(request, joueur_id):
     joueur = get_object_or_404(Joueurs, id=joueur_id)
