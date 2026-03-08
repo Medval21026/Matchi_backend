@@ -358,6 +358,9 @@ from rest_framework.pagination import PageNumberPagination
 
 
 # Classe de pagination personnalisée pour 10 éléments par page
+# Classe de pagination personnalisée pour 10 éléments par page
+# max_page_size = 100 limite la taille maximale de page si quelqu'un essaie de passer ?page_size=1000 dans l'URL
+# Cela empêche les requêtes trop lourdes qui pourraient ralentir le serveur
 class StandardResultsSetPagination(PageNumberPagination):
     page_size = 10
     page_size_query_param = 'page_size'
@@ -577,7 +580,49 @@ class JoueurCreateView(APIView):
 class JoueursListView(generics.ListCreateAPIView):
     queryset = Joueurs.objects.filter(visible=True)
     serializer_class = JoueurSerializer
-    pagination_class = StandardResultsSetPagination
+    
+    def list(self, request, *args, **kwargs):
+        try:
+            # Récupérer le numéro de page depuis les paramètres de requête (par défaut page 1)
+            page = int(request.query_params.get('page', 1))
+            page_size = 10
+            
+            # Récupérer tous les joueurs visibles
+            joueurs = Joueurs.objects.filter(visible=True)
+            total_joueurs = joueurs.count()
+            
+            # Calculer l'offset pour la pagination
+            offset = (page - 1) * page_size
+            
+            # Récupérer les joueurs de la page actuelle
+            joueurs_page = joueurs[offset:offset + page_size]
+            
+            # Sérialiser les joueurs
+            serializer = self.get_serializer(joueurs_page, many=True)
+            
+            # Calculer le nombre total de pages
+            total_pages = (total_joueurs + page_size - 1) // page_size
+            
+            # Préparer la réponse avec les informations de pagination (même structure que get_all_terrains)
+            response_data = {
+                'results': serializer.data,
+                'pagination': {
+                    'page': page,
+                    'page_size': page_size,
+                    'total': total_joueurs,
+                    'total_pages': total_pages,
+                    'has_next': page < total_pages,
+                    'has_previous': page > 1,
+                    'next_page': page + 1 if page < total_pages else None,
+                    'previous_page': page - 1 if page > 1 else None
+                }
+            }
+            
+            return Response(response_data, status=status.HTTP_200_OK)
+        except ValueError:
+            return Response({'error': 'Le paramètre page doit être un nombre valide'}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 def joueur_detail(request, joueur_id):
     joueur = get_object_or_404(Joueurs, id=joueur_id)
