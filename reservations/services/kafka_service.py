@@ -13,6 +13,7 @@ logger = logging.getLogger(__name__)
 
 try:
     from kafka import KafkaProducer
+    from kafka.errors import KafkaTimeoutError
     KAFKA_AVAILABLE = True
 except ImportError:
     KAFKA_AVAILABLE = False
@@ -75,11 +76,18 @@ class KafkaService:
                     bootstrap_servers=[bootstrap_servers],
                     value_serializer=lambda v: json.dumps(v).encode('utf-8'),
                     key_serializer=lambda k: k.encode('utf-8') if k else None,
+                    request_timeout_ms=10000,  # Timeout de 10 secondes pour les requêtes
+                    max_block_ms=5000,  # Timeout de 5 secondes pour bloquer l'envoi
+                    retries=0,  # Pas de retry automatique, on gère manuellement
                 )
                 logger.info(f"Producteur Kafka initialisé avec {bootstrap_servers}")
             except Exception as e:
                 logger.error(f"Erreur lors de l'initialisation du producteur Kafka: {e}")
                 return None
+        
+        # Note: On ne teste pas la connexion ici car cela peut être lent
+        # La connexion sera testée lors du premier send()
+        
         return cls._producer
     
     @classmethod
@@ -159,6 +167,12 @@ class KafkaService:
                     indisponibilite.save(update_fields=['kafka_synced'])
                 
                 return True
+            except KafkaTimeoutError as timeout_error:
+                logger.error(f"⏱️ Timeout Kafka: Kafka ne répond pas après 10 secondes")
+                logger.error(f"   UUID: {indisponibilite.uuid}")
+                logger.error(f"   Vérifiez que Kafka est démarré et accessible sur {getattr(settings, 'KAFKA_BOOTSTRAP_SERVERS', 'localhost:9094')}")
+                # Ne pas marquer comme synchronisé en cas d'erreur
+                raise
             except Exception as flush_error:
                 logger.error(f"Erreur lors de l'envoi (flush): {flush_error}")
                 # Ne pas marquer comme synchronisé en cas d'erreur
@@ -266,7 +280,11 @@ class KafkaService:
         
         producer = cls.get_producer()
         if producer is None:
-            logger.warning("Producteur Kafka non disponible, synchronisation impossible")
+            logger.error("❌ Producteur Kafka non disponible, synchronisation impossible")
+            logger.error("   Vérifiez que:")
+            logger.error("   1. Kafka est démarré")
+            logger.error("   2. Le port est correct (127.0.0.1:9094)")
+            logger.error("   3. Kafka est accessible depuis cette machine")
             return stats
         
         # Calculer la date limite pour éviter de réessayer trop souvent
