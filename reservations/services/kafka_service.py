@@ -4,8 +4,10 @@ Service Kafka pour envoyer les événements de synchronisation des horaires
 import json
 import logging
 from django.conf import settings
+from django.db import models
 from django.db.models import Q
 from datetime import time
+from django.utils import timezone
 
 logger = logging.getLogger(__name__)
 
@@ -135,19 +137,41 @@ class KafkaService:
                 'prix': prix
             }
             
+            # Mettre à jour la date de dernière tentative avant l'envoi
+            indisponibilite.last_kafka_sync_attempt = timezone.now()
+            indisponibilite.save(update_fields=['last_kafka_sync_attempt'])
+            
             # Utiliser l'UUID comme clé pour garantir l'ordre des messages
-            producer.send(
+            future = producer.send(
                 topic,
                 key=str(indisponibilite.uuid),
                 value=message
             )
-            producer.flush()
             
-            logger.info(f"Événement Kafka envoyé: {action} pour UUID {indisponibilite.uuid}")
-            return True
+            # Attendre la confirmation avec un timeout court
+            try:
+                record_metadata = future.get(timeout=10)
+                logger.info(f"Événement Kafka envoyé: {action} pour UUID {indisponibilite.uuid}, topic={record_metadata.topic}, partition={record_metadata.partition}, offset={record_metadata.offset}")
+                
+                # Marquer comme synchronisé seulement si l'envoi réussit
+                if action != 'DELETE':  # Pour DELETE, on ne marque pas comme synced car l'objet sera supprimé
+                    indisponibilite.kafka_synced = True
+                    indisponibilite.save(update_fields=['kafka_synced'])
+                
+                return True
+            except Exception as flush_error:
+                logger.error(f"Erreur lors de l'envoi (flush): {flush_error}")
+                # Ne pas marquer comme synchronisé en cas d'erreur
+                raise
             
         except Exception as e:
             logger.error(f"Erreur lors de l'envoi de l'événement Kafka: {e}")
+            # Marquer comme non synchronisé en cas d'erreur
+            try:
+                indisponibilite.kafka_synced = False
+                indisponibilite.save(update_fields=['kafka_synced', 'last_kafka_sync_attempt'])
+            except Exception as save_error:
+                logger.error(f"Erreur lors de la mise à jour du statut de synchronisation: {save_error}")
             return False
     
     @classmethod
@@ -188,6 +212,10 @@ class KafkaService:
                 'numTel': client_num_tel
             }
             
+            # Mettre à jour la date de dernière tentative avant l'envoi
+            indisponible.last_kafka_sync_attempt = timezone.now()
+            indisponible.save(update_fields=['last_kafka_sync_attempt'])
+            
             # Utiliser l'UUID comme clé pour garantir l'ordre des messages
             producer.send(
                 topic,
@@ -196,12 +224,126 @@ class KafkaService:
             )
             producer.flush()
             
+            # Marquer comme synchronisé seulement si l'envoi réussit
+            if action != 'DELETE':  # Pour DELETE, on ne marque pas comme synced car l'objet sera supprimé
+                indisponible.kafka_synced = True
+                indisponible.save(update_fields=['kafka_synced'])
+            
             logger.info(f"Événement Kafka envoyé: {action} pour UUID {indisponible.uuid}")
             return True
             
         except Exception as e:
             logger.error(f"Erreur lors de l'envoi de l'événement Kafka: {e}")
+            # Marquer comme non synchronisé en cas d'erreur
+            try:
+                indisponible.kafka_synced = False
+                indisponible.save(update_fields=['kafka_synced', 'last_kafka_sync_attempt'])
+            except Exception as save_error:
+                logger.error(f"Erreur lors de la mise à jour du statut de synchronisation: {save_error}")
             return False
+    
+    @classmethod
+    def sync_unsynced_indisponibilites(cls, max_retries=100, min_interval_minutes=5):
+        """
+        Synchroniser les indisponibilités non synchronisées avec Kafka (rattrapage)
+        IMPORTANT: Ne traite que les indisponibilités qui n'ont JAMAIS été synchronisées avec succès
+        
+        Args:
+            max_retries: Nombre maximum d'indisponibilités à traiter par appel
+            min_interval_minutes: Intervalle minimum entre deux tentatives pour la même indisponibilité (en minutes)
+        
+        Returns:
+            dict: Statistiques de synchronisation {'synced': int, 'failed': int, 'skipped': int}
+        """
+        from reservations.models import Indisponibilites
+        from datetime import timedelta
+        
+        stats = {'synced': 0, 'failed': 0, 'skipped': 0}
+        
+        if not KAFKA_AVAILABLE:
+            logger.warning("Kafka non disponible, synchronisation impossible")
+            return stats
+        
+        producer = cls.get_producer()
+        if producer is None:
+            logger.warning("Producteur Kafka non disponible, synchronisation impossible")
+            return stats
+        
+        # Calculer la date limite pour éviter de réessayer trop souvent
+        min_interval = timezone.now() - timedelta(minutes=min_interval_minutes)
+        
+        try:
+            # Vérifier d'abord si les champs existent (au cas où la migration n'a pas été appliquée)
+            try:
+                # Test pour voir si le champ existe
+                test_query = Indisponibilites.objects.filter(kafka_synced=False)
+                test_query.exists()
+                fields_exist = True
+            except Exception as field_error:
+                logger.warning(f"[CATCH-UP] Les champs kafka_synced n'existent pas encore. Migration non appliquée? Erreur: {field_error}")
+                logger.warning("[CATCH-UP] Veuillez exécuter: python manage.py migrate reservations")
+                fields_exist = False
+            
+            if not fields_exist:
+                return stats
+            
+            # Synchroniser UNIQUEMENT les indisponibilités qui n'ont JAMAIS été synchronisées avec succès
+            # (kafka_synced=False ET qui n'ont pas été tentées récemment)
+            unsynced_indisponibilites = Indisponibilites.objects.filter(
+                kafka_synced=False  # Seulement celles qui n'ont jamais été synchronisées avec succès
+            ).filter(
+                models.Q(last_kafka_sync_attempt__isnull=True) | 
+                models.Q(last_kafka_sync_attempt__lt=min_interval)
+            )[:max_retries]
+            
+            count = unsynced_indisponibilites.count()
+            logger.info(f"[CATCH-UP] Trouvé {count} indisponibilité(s) non synchronisée(s)")
+            
+            # Log détaillé pour déboguer
+            total_indisponibilites = Indisponibilites.objects.count()
+            synced_count = Indisponibilites.objects.filter(kafka_synced=True).count()
+            unsynced_total = Indisponibilites.objects.filter(kafka_synced=False).count()
+            logger.info(f"[CATCH-UP] Statistiques: Total={total_indisponibilites}, Synced={synced_count}, Unsynced={unsynced_total}")
+            
+            if count == 0:
+                logger.info("[CATCH-UP] Aucune indisponibilité à synchroniser (toutes sont déjà synchronisées ou ont été tentées récemment)")
+                return stats
+            
+            for indisponibilite in unsynced_indisponibilites:
+                try:
+                    # Vérifier à nouveau que l'indisponibilité n'a pas été synchronisée entre-temps
+                    # (pour éviter les doublons si plusieurs processus exécutent le rattrapage)
+                    indisponibilite.refresh_from_db()
+                    if indisponibilite.kafka_synced:
+                        logger.debug(f"[CATCH-UP] ⏭️ Indisponibilité {indisponibilite.uuid} déjà synchronisée, ignorée")
+                        stats['skipped'] += 1
+                        continue
+                    
+                    logger.info(f"[CATCH-UP] Tentative de synchronisation: UUID={indisponibilite.uuid}, Terrain={indisponibilite.terrain.id}, Date={indisponibilite.date_indisponibilite}")
+                    
+                    # Envoyer l'événement CREATE
+                    # send_indisponibilite_event met automatiquement à jour kafka_synced=True si succès
+                    success = cls.send_indisponibilite_event('CREATE', indisponibilite)
+                    
+                    # Vérifier à nouveau après l'envoi
+                    indisponibilite.refresh_from_db()
+                    
+                    if success and indisponibilite.kafka_synced:
+                        stats['synced'] += 1
+                        logger.info(f"[CATCH-UP] ✅ Indisponibilité {indisponibilite.uuid} synchronisée avec succès")
+                    else:
+                        stats['failed'] += 1
+                        logger.warning(f"[CATCH-UP] ❌ Échec de synchronisation pour {indisponibilite.uuid} (success={success}, kafka_synced={indisponibilite.kafka_synced})")
+                except Exception as e:
+                    stats['failed'] += 1
+                    logger.error(f"[CATCH-UP] Erreur lors de la synchronisation de {indisponibilite.uuid}: {e}", exc_info=True)
+            
+            logger.info(f"[CATCH-UP] Synchronisation terminée: {stats['synced']} synchronisées, {stats['failed']} échecs, {stats['skipped']} ignorées")
+            
+        except Exception as e:
+            logger.error(f"[CATCH-UP] Erreur lors du rattrapage: {e}", exc_info=True)
+        
+        return stats
     
     @classmethod
     def close(cls):

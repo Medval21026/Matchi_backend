@@ -7,6 +7,41 @@
 
 <link rel="stylesheet" href="{% static 'css/heures_indisponibles.css' %}">
 
+<!-- Modal pour envoyer un message à tous les joueurs -->
+<div class="modal fade" id="sendMessageModal" tabindex="-1" aria-labelledby="sendMessageModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="sendMessageModalLabel">Envoyer un message à tous les joueurs</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="sendMessageForm">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="messageTitre" class="form-label">Titre du message</label>
+                        <input type="text" class="form-control" id="messageTitre" placeholder="Entrez le titre du message" value="Notification">
+                    </div>
+                    <div class="mb-3">
+                        <label for="messageText" class="form-label">Message</label>
+                        <textarea class="form-control" id="messageText" rows="5" placeholder="Entrez votre message ici..." required></textarea>
+                    </div>
+                </form>
+                <div id="messageStatus" class="alert" style="display: none;"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                <button type="button" class="btn btn-primary" id="sendMessageBtn">
+                    <i class="fas fa-paper-plane"></i> Envoyer
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+<button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#sendMessageModal" style="margin-left: 10px;">
+    <i class="fas fa-paper-plane"></i> Envoyer un message à tous les joueurs
+</button>
+
 <div class="liste_heures_indisponibles">
     <table class="table table-bordered" id="heuresIndisponiblesTable">
         <thead>
@@ -23,10 +58,9 @@
         <tr>
             <td>{{ heure.heure_debut }}</td>
             <td>{{ heure.heure_fin }}</td>
-            <td>{{ heure.terrain.client.numero_telephone }}</td>
             <td>{{ heure.terrain.nom_fr }} - {{ heure.terrain.nom_ar }}</td>
             <td>
-                <a href="#" class="btn btn-warning btn-sm" data-toggle="modal" data-target="#modifierHeureModal{{ heure.id }}">Modifier</a>
+                <a href="#" class="btn btn-warning btn-sm" data-bs-toggle="modal" data-bs-target="#modifierHeureModal{{ heure.id }}">Modifier</a>
                 <form action="{% url 'supprimer_heure_indisponible' heure.id %}" method="post" style="display:inline;">
                     {% csrf_token %}
                     <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Êtes-vous sûr de vouloir supprimer cette heure indisponible ?');">Supprimer</button>
@@ -46,30 +80,199 @@
         </tbody>
     </table>
 </div>
-
-
-
-<script>
-    $('#searchCite').on('keyup', function() {
-        var value = $(this).val().toLowerCase();
-        $('#heuresIndisponiblesTable tr').each(function() {
-            var phoneNumber = $(this).find('td').eq(2).text().toLowerCase();
-            if (phoneNumber.indexOf(value) > -1) {
-                $(this).show();
-            } else {
-                $(this).hide();
-            }
-        });
-    });
-</script>
 {% endblock heures_indisponible %}
 
+{% block extra_js %}
+<script>
+    // Fonction pour récupérer le cookie CSRF
+    function getCookie(name) {
+        var cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            var cookies = document.cookie.split(';');
+            for (var i = 0; i < cookies.length; i++) {
+                var cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
 
+    // Utiliser jQuery qui est maintenant chargé
+    jQuery(document).ready(function($) {
+        // Recherche dans le tableau
+        $('#searchCite').on('keyup', function() {
+            var value = $(this).val().toLowerCase();
+            $('#heuresIndisponiblesTable tr').each(function() {
+                var phoneNumber = $(this).find('td').eq(2).text().toLowerCase();
+                if (phoneNumber.indexOf(value) > -1) {
+                    $(this).show();
+                } else {
+                    $(this).hide();
+                }
+            });
+        });
 
+        // Gestion de l'envoi de message à tous les joueurs
+        $(document).on('click', '#sendMessageBtn', function(e) {
+            e.preventDefault();
+            console.log('Bouton cliqué');
+            
+            var titre = $('#messageTitre').val() || 'Notification';
+            var message = $('#messageText').val();
+            var statusDiv = $('#messageStatus');
+            var sendBtn = $(this);
 
-{% block header_gestion_terrain %}
-<link rel="stylesheet" href="{% static 'css/header_Gestion_terrain.css' %}">
-<div class="header_gestion_terrain">
-    <input  id="searchCite"   type="search" placeholder="Rechercher du cite">
-</div>
-{% endblock header_gestion_terrain %}
+            console.log('Titre:', titre);
+            console.log('Message:', message);
+
+            if (!message || !message.trim()) {
+                statusDiv.removeClass('alert-success').addClass('alert-danger').text('Veuillez entrer un message').show();
+                return;
+            }
+
+            // Désactiver le bouton pendant l'envoi
+            sendBtn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Envoi en cours...');
+            statusDiv.hide();
+
+            // Récupérer le token CSRF
+            var csrftoken = $('[name=csrfmiddlewaretoken]').val();
+            if (!csrftoken) {
+                // Essayer de récupérer depuis les cookies
+                csrftoken = getCookie('csrftoken');
+            }
+
+            var url = '{% url "send_message_to_all_joueurs" %}';
+            console.log('URL:', url);
+            console.log('CSRF Token:', csrftoken);
+
+            // Envoyer la requête
+            $.ajax({
+                url: url,
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': csrftoken,
+                    'Content-Type': 'application/json'
+                },
+                data: JSON.stringify({
+                    'titre': titre,
+                    'message': message
+                }),
+                success: function(response) {
+                    console.log('Réponse succès:', response);
+                    statusDiv.removeClass('alert-danger').addClass('alert-success');
+                    
+                    if (response.status === 'processing') {
+                        // L'envoi a démarré en arrière-plan
+                        statusDiv.html(
+                            '<strong>Envoi démarré!</strong><br>' +
+                            'Total joueurs: ' + response.total_joueurs + '<br>' +
+                            '<small>Les messages sont envoyés en arrière-plan. Vous pouvez fermer cette fenêtre.</small>'
+                        ).show();
+                        
+                        // Réinitialiser le formulaire
+                        $('#messageText').val('');
+                        
+                        // Fermer le modal après 2 secondes
+                        setTimeout(function() {
+                            var modalElement = document.getElementById('sendMessageModal');
+                            if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+                                var modal = bootstrap.Modal.getInstance(modalElement);
+                                if (modal) {
+                                    modal.hide();
+                                }
+                            }
+                            // Supprimer le backdrop si présent
+                            var backdrop = document.querySelector('.modal-backdrop');
+                            if (backdrop) {
+                                backdrop.remove();
+                            }
+                            // Réinitialiser le style du body
+                            document.body.classList.remove('modal-open');
+                            document.body.style.overflow = '';
+                            document.body.style.paddingRight = '';
+                            statusDiv.hide();
+                        }, 2000);
+                    } else {
+                        // Ancien format de réponse (pour compatibilité)
+                        var succesCount = (typeof response.succes !== 'undefined') ? response.succes : 0;
+                        var errorCount = (typeof response.erreurs !== 'undefined') ? response.erreurs : 0;
+                        statusDiv.html(
+                            '<strong>Succès!</strong><br>' +
+                            'Total joueurs: ' + response.total_joueurs + '<br>' +
+                            'Messages envoyés: ' + succesCount + '<br>' +
+                            'Erreurs: ' + errorCount
+                        ).show();
+                        
+                        // Réinitialiser le formulaire
+                        $('#messageText').val('');
+                        
+                        // Fermer le modal après 3 secondes
+                        setTimeout(function() {
+                            var modalElement = document.getElementById('sendMessageModal');
+                            if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+                                var modal = bootstrap.Modal.getInstance(modalElement);
+                                if (modal) {
+                                    modal.hide();
+                                }
+                            }
+                            // Supprimer le backdrop si présent
+                            var backdrop = document.querySelector('.modal-backdrop');
+                            if (backdrop) {
+                                backdrop.remove();
+                            }
+                            // Réinitialiser le style du body
+                            document.body.classList.remove('modal-open');
+                            document.body.style.overflow = '';
+                            document.body.style.paddingRight = '';
+                            statusDiv.hide();
+                        }, 3000);
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error('Erreur AJAX:', xhr, status, error);
+                    var errorMsg = 'Erreur lors de l\'envoi du message';
+                    if (xhr.responseJSON && xhr.responseJSON.error) {
+                        errorMsg = xhr.responseJSON.error;
+                    } else if (xhr.responseText) {
+                        try {
+                            var errorData = JSON.parse(xhr.responseText);
+                            if (errorData.error) {
+                                errorMsg = errorData.error;
+                            }
+                        } catch(e) {
+                            errorMsg = xhr.responseText.substring(0, 100);
+                        }
+                    }
+                    statusDiv.removeClass('alert-success').addClass('alert-danger').text(errorMsg).show();
+                },
+                complete: function() {
+                    sendBtn.prop('disabled', false).html('<i class="fas fa-paper-plane"></i> Envoyer');
+                }
+            });
+        });
+
+        // Réinitialiser le modal quand il est fermé
+        var sendMessageModal = document.getElementById('sendMessageModal');
+        if (sendMessageModal) {
+            sendMessageModal.addEventListener('hidden.bs.modal', function() {
+                $('#messageText').val('');
+                $('#messageTitre').val('Notification');
+                $('#messageStatus').hide();
+                
+                // Supprimer le backdrop si présent
+                var backdrop = document.querySelector('.modal-backdrop');
+                if (backdrop) {
+                    backdrop.remove();
+                }
+                // Réinitialiser le style du body
+                document.body.classList.remove('modal-open');
+                document.body.style.overflow = '';
+                document.body.style.paddingRight = '';
+            });
+        }
+    });
+</script>
+{% endblock %}

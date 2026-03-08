@@ -3,12 +3,17 @@ from django.contrib.auth.hashers import make_password
 import uuid
 
 class Client(models.Model):
+    LANGUE_CHOICES = [
+        ('fr', 'Français'),
+        ('ar', 'Arabe'),
+    ]
     nom = models.CharField(max_length=100)
     prenom = models.CharField(max_length=100)
     numero_telephone = models.IntegerField()
     modepass_chiffre = models.CharField(max_length=128)
     credie = models.IntegerField()
     fcm_token = models.CharField(max_length=255, blank=True, null=True)  # Ajouté
+    langue = models.CharField(max_length=2, choices=LANGUE_CHOICES, default='fr')
 
 class Wilaye(models.Model):
     code_wilaye = models.IntegerField(primary_key=True)
@@ -51,6 +56,10 @@ class Terrains(models.Model):
 
 
 class Joueurs(models.Model):
+    LANGUE_CHOICES = [
+        ('fr', 'Français'),
+        ('ar', 'Arabe'),
+    ]
     nom_joueur = models.CharField(max_length=100)
     prenom_joueur = models.CharField(max_length=100)
     numero_telephone = models.CharField(max_length=20)
@@ -65,6 +74,7 @@ class Joueurs(models.Model):
     moughataa = models.ForeignKey('Moughataa', on_delete=models.CASCADE, default=None, null=True)
     fcm_tokenjoueur = models.CharField(max_length=255, blank=True, null=True)
     is_blocked = models.BooleanField(default=False)
+    langue = models.CharField(max_length=2, choices=LANGUE_CHOICES, default='fr')
 
 
     def save(self, *args, **kwargs):
@@ -91,6 +101,8 @@ class Indisponibilites(models.Model):
     date_indisponibilite = models.DateField()
     heure_debut = models.TimeField()
     heure_fin = models.TimeField()
+    kafka_synced = models.BooleanField(default=False, db_index=True, help_text="Indique si l'indisponibilité a été synchronisée avec Kafka")
+    last_kafka_sync_attempt = models.DateTimeField(null=True, blank=True, help_text="Dernière tentative de synchronisation Kafka")
     
     class Meta:
         unique_together = [['terrain', 'date_indisponibilite', 'heure_debut', 'heure_fin']]

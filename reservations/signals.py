@@ -24,6 +24,15 @@ def indisponibilite_saved(sender, instance, created, **kwargs):
         # raw=True signifie que c'est un chargement depuis la DB
         return
     
+    # Ne pas publier si seule la synchronisation Kafka a été mise à jour
+    # (pour éviter les boucles infinies lors du rattrapage)
+    update_fields = kwargs.get('update_fields')
+    if update_fields and not created:
+        # Si on met à jour uniquement les champs de synchronisation Kafka, ne pas publier
+        if set(update_fields).issubset({'kafka_synced', 'last_kafka_sync_attempt'}):
+            logger.debug(f"Signal ignoré: mise à jour uniquement des champs Kafka pour UUID: {instance.uuid}")
+            return
+    
     publisher = get_indisponibilite_publisher()
     try:
         if created:

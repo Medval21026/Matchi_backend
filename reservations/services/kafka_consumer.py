@@ -746,6 +746,20 @@ class KafkaConsumerService:
         # Si on arrive ici, le consumer est connecté et prêt
         logger.info("✅ Consumer connecté et prêt à consommer")
         
+        # Exécuter le rattrapage (catch-up) des indisponibilités non synchronisées
+        logger.info("")
+        logger.info("=" * 60)
+        logger.info("SYNCHRONISATION RATTRAPAGE (CATCH-UP)")
+        logger.info("=" * 60)
+        try:
+            from .kafka_service import KafkaService
+            catchup_stats = KafkaService.sync_unsynced_indisponibilites(max_retries=200, min_interval_minutes=5)
+            logger.info(f"Rattrapage terminé: {catchup_stats['synced']} synchronisées, {catchup_stats['failed']} échecs")
+        except Exception as e:
+            logger.error(f"Erreur lors du rattrapage: {e}", exc_info=True)
+        logger.info("=" * 60)
+        logger.info("")
+        
         cls._running = True
         message_count = 0
         
@@ -763,6 +777,8 @@ class KafkaConsumerService:
         logger.info("")
         
         last_heartbeat_log = time.time()
+        last_catchup_time = time.time()
+        catchup_interval = 300  # Exécuter le rattrapage toutes les 5 minutes (300 secondes)
         
         try:
             logger.info("[ACTIF] Consumer actif et en attente de messages...")
@@ -781,8 +797,20 @@ class KafkaConsumerService:
                     # Augmenter le timeout pour recevoir plus de messages par batch
                     message_pack = consumer.poll(timeout_ms=5000)
                     
-                    # Afficher un heartbeat toutes les 10 secondes pour montrer qu'on est actif
+                    # Exécuter le rattrapage périodiquement (toutes les 5 minutes)
                     current_time = time.time()
+                    if current_time - last_catchup_time >= catchup_interval:
+                        logger.info("[CATCH-UP PERIODIQUE] Démarrage du rattrapage périodique...")
+                        try:
+                            from .kafka_service import KafkaService
+                            catchup_stats = KafkaService.sync_unsynced_indisponibilites(max_retries=100, min_interval_minutes=5)
+                            if catchup_stats['synced'] > 0 or catchup_stats['failed'] > 0:
+                                logger.info(f"[CATCH-UP PERIODIQUE] {catchup_stats['synced']} synchronisées, {catchup_stats['failed']} échecs")
+                        except Exception as catchup_error:
+                            logger.error(f"[CATCH-UP PERIODIQUE] Erreur lors du rattrapage périodique: {catchup_error}")
+                        last_catchup_time = current_time
+                    
+                    # Afficher un heartbeat toutes les 10 secondes pour montrer qu'on est actif
                     if current_time - last_heartbeat_log >= 10:
                         # Vérifier les offsets pour diagnostiquer
                         try:

@@ -8,6 +8,7 @@ from kafka.errors import KafkaError, KafkaTimeoutError
 from django.conf import settings
 from datetime import date, time
 from django.db.models import Q
+from django.utils import timezone
 
 logger = logging.getLogger(__name__)
 
@@ -45,8 +46,8 @@ class IndisponibiliteKafkaPublisher:
                     key_serializer=lambda k: k.encode('utf-8') if k else None,
                     acks='all',  # Attendre la confirmation de tous les replicas
                     retries=3,   # Nombre de tentatives en cas d'échec
-                    request_timeout_ms=30000,  # Timeout de 30 secondes pour les requêtes
-                    max_block_ms=30000,  # Timeout de 30 secondes pour bloquer l'envoi
+                    request_timeout_ms=10000,  # Timeout de 10 secondes pour les requêtes (réduit pour éviter les blocages)
+                    max_block_ms=5000,  # Timeout de 5 secondes pour bloquer l'envoi (réduit)
                 )
                 logger.info(
                     f"KafkaProducer initialise - "
@@ -169,6 +170,14 @@ class IndisponibiliteKafkaPublisher:
                 "prix": prix
             }
             
+            # Mettre à jour la date de dernière tentative avant l'envoi (si le champ existe)
+            try:
+                if hasattr(indisponibilite, 'last_kafka_sync_attempt'):
+                    indisponibilite.last_kafka_sync_attempt = timezone.now()
+                    indisponibilite.save(update_fields=['last_kafka_sync_attempt'])
+            except Exception as save_error:
+                logger.warning(f"Erreur lors de la mise à jour de last_kafka_sync_attempt: {save_error}")
+            
             producer = self._get_producer()
             
             # Utiliser l'UUID comme clé pour garantir l'ordre des messages
@@ -178,13 +187,42 @@ class IndisponibiliteKafkaPublisher:
                 value=event
             )
             
-            # Attendre la confirmation (timeout augmenté à 30 secondes)
-            record_metadata = future.get(timeout=30)
-            logger.info(
-                f"Evenement publie sur Kafka: action={action}, uuid={indisponibilite.uuid}, "
-                f"topic={record_metadata.topic}, partition={record_metadata.partition}, "
-                f"offset={record_metadata.offset}"
-            )
+            # Attendre la confirmation (timeout de 10 secondes)
+            # Si Kafka ne répond pas, on ne bloque pas l'application
+            try:
+                record_metadata = future.get(timeout=10)
+                # Marquer comme synchronisé seulement si l'envoi réussit (si le champ existe)
+                if action != 'deleted' and hasattr(indisponibilite, 'kafka_synced'):
+                    try:
+                        indisponibilite.kafka_synced = True
+                        indisponibilite.save(update_fields=['kafka_synced'])
+                    except Exception as save_error:
+                        logger.warning(f"Erreur lors de la mise à jour de kafka_synced: {save_error}")
+                
+                logger.info(
+                    f"Evenement publie sur Kafka: action={action}, uuid={indisponibilite.uuid}, "
+                    f"topic={record_metadata.topic}, partition={record_metadata.partition}, "
+                    f"offset={record_metadata.offset}"
+                )
+            except KafkaTimeoutError as timeout_error:
+                # Marquer comme non synchronisé en cas de timeout (si le champ existe)
+                if hasattr(indisponibilite, 'kafka_synced'):
+                    try:
+                        indisponibilite.kafka_synced = False
+                        update_fields = ['kafka_synced']
+                        if hasattr(indisponibilite, 'last_kafka_sync_attempt'):
+                            update_fields.append('last_kafka_sync_attempt')
+                        indisponibilite.save(update_fields=update_fields)
+                    except Exception as save_error:
+                        logger.warning(f"Erreur lors de la mise à jour du statut de synchronisation: {save_error}")
+                
+                logger.warning(
+                    f"Timeout lors de la publication (Kafka ne répond pas ou est arrêté): {timeout_error}. "
+                    f"UUID: {indisponibilite.uuid}, Action: {action}. "
+                    f"L'événement sera réessayé automatiquement par le mécanisme de rattrapage."
+                )
+                # Ne pas lever l'exception pour ne pas bloquer l'application
+                # Le mécanisme de rattrapage réessayera plus tard
             
         except KafkaError as e:
             logger.error(f"Erreur Kafka lors de la publication: {e}", exc_info=True)
@@ -248,12 +286,18 @@ class IndisponibiliteKafkaPublisher:
                 value=event
             )
             
-            # Attendre la confirmation (timeout augmenté à 30 secondes)
-            record_metadata = future.get(timeout=30)
-            logger.info(
-                f"Evenement de suppression publie: uuid={uuid}, "
-                f"topic={record_metadata.topic}, offset={record_metadata.offset}"
-            )
+            # Attendre la confirmation (timeout de 10 secondes)
+            try:
+                record_metadata = future.get(timeout=10)
+                logger.info(
+                    f"Evenement de suppression publie: uuid={uuid}, "
+                    f"topic={record_metadata.topic}, offset={record_metadata.offset}"
+                )
+            except KafkaTimeoutError as timeout_error:
+                logger.warning(
+                    f"Timeout lors de la publication de suppression (Kafka ne répond pas): {timeout_error}. "
+                    f"UUID: {uuid}. L'événement sera réessayé automatiquement par le mécanisme de rattrapage."
+                )
             
         except KafkaTimeoutError as e:
             logger.error(

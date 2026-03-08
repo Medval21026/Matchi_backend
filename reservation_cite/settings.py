@@ -118,21 +118,6 @@ DATABASES = {
     }
 }
 # Configuration de la base de données avec variables d'environnement
-# Pour Railway, utilisez les variables d'environnement
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'mysql.connector.django',  # Utiliser mysql.connector pour compatibilité avec Railway
-#         'NAME': os.getenv('MYSQLDATABASE', 'cite'),
-#         'USER': os.getenv('MYSQLUSER', 'root'),
-#         'PASSWORD': os.getenv('MYSQLPASSWORD', ''),
-#         'HOST': os.getenv('MYSQLHOST', 'localhost'),
-#         'PORT': os.getenv('MYSQLPORT', '3306'),
-#         'OPTIONS': {
-#             'sql_mode': 'STRICT_TRANS_TABLES',
-#             'charset': 'utf8mb4',
-#         },
-#     }
-# }
 
 
 # Si MYSQL_URL est fourni (format: mysql://user:password@host:port/database)
@@ -224,9 +209,8 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 CORS_ALLOW_ALL_ORIGINS = True  # Pour le développement, autoriser toutes les origines
 CORS_ALLOW_CREDENTIALS = True
 
-# CSRF Trusted Origins pour Railway
+# CSRF Trusted Origins
 CSRF_TRUSTED_ORIGINS = [
-    'https://matchibackend-production.up.railway.app',
     'http://localhost:8000',
     'http://127.0.0.1:8000',
 ]
