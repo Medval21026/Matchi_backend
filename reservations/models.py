@@ -178,7 +178,6 @@ class Periode(models.Model):
 
 
 class Indisponibles_tous_temps(models.Model):
-    uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True, db_index=True)
     heure_debut = models.TimeField()
     heure_fin = models.TimeField()
     terrain = models.ForeignKey(

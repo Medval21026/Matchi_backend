@@ -241,17 +241,20 @@ class KafkaConsumerService:
                 return
             
             action = data.get('action', '').lower()  # Utiliser lowercase pour correspondre à Spring Boot
+            # Support à la fois UUID (ancien format) et ID (nouveau format)
             uuid_str = data.get('uuid')
+            message_id = data.get('id')
             source = data.get('source', 'unknown')
             
             logger.info(f"[MESSAGE] Offset: {message.offset}, Partition: {message.partition}")
-            logger.info(f"[MESSAGE] Action: {action}, UUID: {uuid_str}, Source: {source}")
+            logger.info(f"[MESSAGE] Action: {action}, UUID: {uuid_str}, ID: {message_id}, Source: {source}")
             logger.info(f"[MESSAGE] Donnees completes: {json.dumps(data, indent=2, default=str)}")
             
             # Si le message vient de Django, on ne le traite pas (éviter les boucles)
             # MAIS on doit quand même avancer dans le topic pour réduire le lag
             if source == 'django':
-                logger.info(f"[IGNORE] Message ignore car source=django (evite la boucle) - UUID: {uuid_str}, Offset: {message.offset}, Partition: {message.partition}")
+                identifier = message_id or uuid_str
+                logger.info(f"[IGNORE] Message ignore car source=django (evite la boucle) - ID/UUID: {identifier}, Offset: {message.offset}, Partition: {message.partition}")
                 # On retourne sans traiter, mais le commit sera fait après dans la boucle principale
                 # pour avancer dans le topic et réduire le lag
                 return
@@ -259,14 +262,9 @@ class KafkaConsumerService:
             # Si source n'est pas 'django', c'est un message de Spring Boot - on doit le traiter
             logger.info(f"[TRAITEMENT] Message de Spring Boot detecte (source={source}), traitement...")
             
-            if not uuid_str:
-                logger.warning("Message ignoré: UUID manquant")
-                return
-            
-            try:
-                message_uuid = uuid_lib.UUID(uuid_str)
-            except ValueError:
-                logger.error(f"UUID invalide: {uuid_str}")
+            # Pour les indisponibilités tous temps, on utilise l'ID si disponible, sinon l'UUID (compatibilité)
+            if not message_id and not uuid_str:
+                logger.warning("Message ignoré: ID et UUID manquants")
                 return
             
             # Désactiver temporairement les signaux pour éviter une boucle infinie
@@ -284,7 +282,8 @@ class KafkaConsumerService:
             terrain_id_spring = data.get('terrainId') or data.get('terrain_id')
             
             if not proprietaire_telephone:
-                logger.warning(f"[ERREUR] Message ignoré: proprietaireTelephone manquant pour UUID {uuid_str}")
+                identifier = message_id or uuid_str
+                logger.warning(f"[ERREUR] Message ignoré: proprietaireTelephone manquant pour ID/UUID {identifier}")
                 logger.warning(f"  Données reçues: {json.dumps(data, indent=2, default=str)}")
                 logger.warning(f"  Offset: {message.offset}, Partition: {message.partition}")
                 return
@@ -303,7 +302,8 @@ class KafkaConsumerService:
                 client = Client.objects.get(numero_telephone=proprietaire_telephone)
                 logger.info(f"[CLIENT] Client trouvé: ID={client.id}, Téléphone={client.numero_telephone}")
             except Client.DoesNotExist:
-                logger.error(f"[ERREUR] Client avec téléphone {proprietaire_telephone} n'existe pas pour UUID {uuid_str}")
+                identifier = message_id or uuid_str
+                logger.error(f"[ERREUR] Client avec téléphone {proprietaire_telephone} n'existe pas pour ID/UUID {identifier}")
                 logger.error(f"  Offset: {message.offset}, Partition: {message.partition}")
                 return
             except Client.MultipleObjectsReturned:
@@ -314,7 +314,8 @@ class KafkaConsumerService:
             terrains = Terrains.objects.filter(client=client)
             
             if not terrains.exists():
-                logger.error(f"[ERREUR] Aucun terrain trouvé pour le client {client.id} (téléphone: {proprietaire_telephone}) - UUID {uuid_str}")
+                identifier = message_id or uuid_str
+                logger.error(f"[ERREUR] Aucun terrain trouvé pour le client {client.id} (téléphone: {proprietaire_telephone}) - ID/UUID {identifier}")
                 logger.error(f"  Offset: {message.offset}, Partition: {message.partition}")
                 return
             
@@ -342,16 +343,29 @@ class KafkaConsumerService:
                 with transaction.atomic():
                     # Traiter selon le type
                     if type_indisponible == 'indisponible_tous_temps':
+                        # Pour indisponibles_tous_temps, utiliser l'ID si disponible
+                        if not message_id:
+                            logger.warning("Message ignoré: ID manquant pour indisponible_tous_temps")
+                            return
                         cls._process_indisponible_tous_temps(
-                            action, message_uuid, terrain, data
+                            action, message_id, terrain, data, use_id=True
                         )
                     else:
-                        # Indisponibilité normale
+                        # Indisponibilité normale - continue d'utiliser UUID
+                        if not uuid_str:
+                            logger.warning("Message ignoré: UUID manquant pour indisponibilité normale")
+                            return
+                        try:
+                            message_uuid = uuid_lib.UUID(uuid_str)
+                        except ValueError:
+                            logger.error(f"UUID invalide: {uuid_str}")
+                            return
                         cls._process_indisponibilite(
                             action, message_uuid, terrain, data
                         )
                     
-                    logger.info(f"✅ Message traité avec succès: {action} pour UUID {uuid_str}")
+                    identifier_log = message_id or uuid_str
+                    logger.info(f"✅ Message traité avec succès: {action} pour ID/UUID {identifier_log}")
                     
             finally:
                 # Réactiver les signaux
@@ -669,18 +683,45 @@ class KafkaConsumerService:
             raise
     
     @classmethod
-    def _process_indisponible_tous_temps(cls, action, message_uuid, terrain, data):
+    def _process_indisponible_tous_temps(cls, action, identifier, terrain, data, use_id=False):
         """Traiter une indisponibilité tous temps"""
         from reservations.models import Indisponibles_tous_temps
         from datetime import datetime, time
         
         if action == 'DELETE' or action == 'DELETED':
             try:
-                indisponible = Indisponibles_tous_temps.objects.get(uuid=message_uuid)
+                if use_id:
+                    # Utiliser l'ID pour trouver l'objet
+                    indisponible = Indisponibles_tous_temps.objects.get(id=identifier)
+                else:
+                    # Compatibilité avec l'ancien format UUID (si jamais il y en a encore)
+                    # Chercher par terrain, heure_debut et heure_fin car UUID n'existe plus
+                    heure_debut_data = data.get('heureDebut') or data.get('heure_debut')
+                    heure_fin_data = data.get('heureFin') or data.get('heure_fin')
+                    if not all([heure_debut_data, heure_fin_data]):
+                        logger.warning(f"Données incomplètes pour suppression: {identifier}")
+                        return
+                    
+                    if isinstance(heure_debut_data, list):
+                        heure_debut = time(heure_debut_data[0], heure_debut_data[1])
+                    else:
+                        heure_debut = datetime.fromisoformat(heure_debut_data.replace('Z', '+00:00')).time()
+                    
+                    if isinstance(heure_fin_data, list):
+                        heure_fin = time(heure_fin_data[0], heure_fin_data[1])
+                    else:
+                        heure_fin = datetime.fromisoformat(heure_fin_data.replace('Z', '+00:00')).time()
+                    
+                    indisponible = Indisponibles_tous_temps.objects.get(
+                        terrain=terrain,
+                        heure_debut=heure_debut,
+                        heure_fin=heure_fin
+                    )
+                
                 indisponible.delete()
-                logger.info(f"Indisponible tous temps supprimée: UUID {message_uuid}")
+                logger.info(f"Indisponible tous temps supprimée: ID {identifier}")
             except Indisponibles_tous_temps.DoesNotExist:
-                logger.warning(f"Indisponible tous temps non trouvée: UUID {message_uuid}")
+                logger.warning(f"Indisponible tous temps non trouvée: ID {identifier}")
             return
         
         # Parser les heures
@@ -688,7 +729,7 @@ class KafkaConsumerService:
         heure_fin_data = data.get('heureFin') or data.get('heure_fin')
         
         if not all([heure_debut_data, heure_fin_data]):
-            logger.warning(f"Données incomplètes pour UUID {message_uuid}")
+            logger.warning(f"Données incomplètes pour ID {identifier}")
             return
         
         if isinstance(heure_debut_data, list):
@@ -702,8 +743,11 @@ class KafkaConsumerService:
             heure_fin = datetime.fromisoformat(heure_fin_data.replace('Z', '+00:00')).time()
         
         # CREATE ou UPDATE
+        # Utiliser terrain, heure_debut et heure_fin comme clé unique
         indisponible, created = Indisponibles_tous_temps.objects.update_or_create(
-            uuid=message_uuid,
+            terrain=terrain,
+            heure_debut=heure_debut,
+            heure_fin=heure_fin,
             defaults={
                 'terrain': terrain,
                 'heure_debut': heure_debut,
@@ -712,7 +756,7 @@ class KafkaConsumerService:
         )
         
         action_text = "créée" if created else "mise à jour"
-        logger.info(f"Indisponible tous temps {action_text}: UUID {message_uuid}")
+        logger.info(f"Indisponible tous temps {action_text}: ID {indisponible.id}")
     
     @classmethod
     def start_consuming(cls):

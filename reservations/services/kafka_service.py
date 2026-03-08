@@ -209,7 +209,7 @@ class KafkaService:
         try:
             topic = getattr(settings, 'KAFKA_TOPIC', 'horaire-sync-topic')
             
-            # Préparer le message avec l'UUID
+            # Préparer le message avec l'ID
             # Récupérer le numéro de téléphone du client via le terrain
             client_num_tel = None
             if indisponible.terrain and indisponible.terrain.client:
@@ -217,7 +217,7 @@ class KafkaService:
             
             message = {
                 'action': action,
-                'uuid': str(indisponible.uuid),
+                'id': indisponible.id,
                 'terrain_id': indisponible.terrain.id,
                 'heure_debut': indisponible.heure_debut.isoformat(),
                 'heure_fin': indisponible.heure_fin.isoformat(),
@@ -226,34 +226,19 @@ class KafkaService:
                 'numTel': client_num_tel
             }
             
-            # Mettre à jour la date de dernière tentative avant l'envoi
-            indisponible.last_kafka_sync_attempt = timezone.now()
-            indisponible.save(update_fields=['last_kafka_sync_attempt'])
-            
-            # Utiliser l'UUID comme clé pour garantir l'ordre des messages
+            # Utiliser l'ID comme clé pour garantir l'ordre des messages
             producer.send(
                 topic,
-                key=str(indisponible.uuid),
+                key=str(indisponible.id),
                 value=message
             )
             producer.flush()
             
-            # Marquer comme synchronisé seulement si l'envoi réussit
-            if action != 'DELETE':  # Pour DELETE, on ne marque pas comme synced car l'objet sera supprimé
-                indisponible.kafka_synced = True
-                indisponible.save(update_fields=['kafka_synced'])
-            
-            logger.info(f"Événement Kafka envoyé: {action} pour UUID {indisponible.uuid}")
+            logger.info(f"Événement Kafka envoyé: {action} pour ID {indisponible.id}")
             return True
             
         except Exception as e:
             logger.error(f"Erreur lors de l'envoi de l'événement Kafka: {e}")
-            # Marquer comme non synchronisé en cas d'erreur
-            try:
-                indisponible.kafka_synced = False
-                indisponible.save(update_fields=['kafka_synced', 'last_kafka_sync_attempt'])
-            except Exception as save_error:
-                logger.error(f"Erreur lors de la mise à jour du statut de synchronisation: {save_error}")
             return False
     
     @classmethod

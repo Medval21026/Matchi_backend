@@ -82,7 +82,7 @@ def indisponible_tous_temps_saved(sender, instance, created, **kwargs):
     try:
         action = 'CREATE' if created else 'UPDATE'
         KafkaService.send_indisponible_tous_temps_event(action, instance)
-        logger.info(f"Signal post_save: Evenement {action} envoye pour Indisponibles_tous_temps UUID {instance.uuid}")
+        logger.info(f"Signal post_save: Evenement {action} envoye pour Indisponibles_tous_temps ID {instance.id}")
     except Exception as e:
         logger.error(f"Erreur dans le signal post_save pour Indisponibles_tous_temps: {e}")
 
@@ -94,6 +94,6 @@ def indisponible_tous_temps_deleted(sender, instance, **kwargs):
     """
     try:
         KafkaService.send_indisponible_tous_temps_event('DELETE', instance)
-        logger.info(f"Signal pre_delete: Evenement DELETE envoye pour Indisponibles_tous_temps UUID {instance.uuid}")
+        logger.info(f"Signal pre_delete: Evenement DELETE envoye pour Indisponibles_tous_temps ID {instance.id}")
     except Exception as e:
         logger.error(f"Erreur dans le signal pre_delete pour Indisponibles_tous_temps: {e}")
