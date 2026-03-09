@@ -213,6 +213,7 @@ CORS_ALLOW_CREDENTIALS = True
 CSRF_TRUSTED_ORIGINS = [
     'http://localhost:8000',
     'http://127.0.0.1:8000',
+    'http://187.124.35.219',  # IP du VPS
 ]
 
 # Configuration Kafka
@@ -224,3 +225,14 @@ KAFKA_CONFIG = {
     'client_id': 'django-reservation-app',
 }
 KAFKA_TOPIC = 'horaire-sync-topic'
+
+# Configuration des headers de sécurité
+# Désactiver Cross-Origin-Opener-Policy en HTTP (nécessite HTTPS ou localhost)
+# Ce header est ignoré par les navigateurs sur des origines non sécurisées (HTTP)
+SECURE_CROSS_ORIGIN_OPENER_POLICY = None
+
+# Désactiver les autres headers de sécurité qui nécessitent HTTPS si on est en HTTP
+# (Ces valeurs seront utilisées si vous passez à HTTPS plus tard)
+SECURE_SSL_REDIRECT = False  # Mettre à True si vous configurez HTTPS
+SESSION_COOKIE_SECURE = False  # Mettre à True si HTTPS
+CSRF_COOKIE_SECURE = False  # Mettre à True si HTTPS
