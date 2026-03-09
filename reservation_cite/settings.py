@@ -107,12 +107,12 @@ WSGI_APPLICATION = 'reservation_cite.wsgi.application'
 # }
 DATABASES = {
     'default': {
-        'ENGINE': 'mysql.connector.django',
-        'NAME': 'cite',
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': 'matchi',
         'USER': 'root',
-        'PASSWORD': '',
-        'HOST': 'localhost',
-        'PORT': '3306',
+        'PASSWORD': 'Zeidany33#',
+        'HOST': 'localhost',  # VPS
+        'PORT': '3306',  # Port MySQL sur le VPS
         'OPTIONS': {
             'sql_mode': 'STRICT_TRANS_TABLES',
         },
