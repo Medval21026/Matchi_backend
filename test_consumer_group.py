@@ -18,7 +18,7 @@ def test_consumer_group():
     print("TEST DE CREATION D'UN CONSUMER GROUP KAFKA")
     print("=" * 60)
     
-    bootstrap_servers = 'localhost:9094'
+    bootstrap_servers = '187.124.35.219:9092'
     topic = 'horaire-sync-topic'
     group_id = 'django-reservation-consumer-group'
     

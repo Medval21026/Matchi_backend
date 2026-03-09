@@ -216,9 +216,9 @@ CSRF_TRUSTED_ORIGINS = [
 ]
 
 # Configuration Kafka
-# Si localhost ne fonctionne pas, essayez 127.0.0.1:9094
-# Si Kafka est dans Docker, vérifiez les ports exposés
-KAFKA_BOOTSTRAP_SERVERS = os.getenv('KAFKA_BOOTSTRAP_SERVERS', '127.0.0.1:9094')
+# Configuration pour VPS: 187.124.35.219:9092
+# Peut être surchargée via variable d'environnement KAFKA_BOOTSTRAP_SERVERS
+KAFKA_BOOTSTRAP_SERVERS = os.getenv('KAFKA_BOOTSTRAP_SERVERS', '187.124.35.219:9092')
 KAFKA_CONFIG = {
     'bootstrap_servers': KAFKA_BOOTSTRAP_SERVERS,
     'client_id': 'django-reservation-app',

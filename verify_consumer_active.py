@@ -18,7 +18,7 @@ def check_consumer_group():
     print("VERIFICATION CONSUMER GROUP DJANGO")
     print("=" * 60)
     
-    bootstrap_servers = '127.0.0.1:9094'
+    bootstrap_servers = '187.124.35.219:9092'
     group_id = 'django-reservation-consumer-group'
     topic = 'horaire-sync-topic'
     

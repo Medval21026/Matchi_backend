@@ -16,7 +16,7 @@ print("=" * 60)
 print("VERIFICATION DES MESSAGES KAFKA")
 print("=" * 60)
 
-bootstrap_servers = '127.0.0.1:9094'
+bootstrap_servers = '187.124.35.219:9092'
 topic = 'horaire-sync-topic'
 
 try:
