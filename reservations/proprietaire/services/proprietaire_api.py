@@ -1,6 +1,6 @@
 import requests
 
-BASE_URL = "http://localhost:8081/api/proprietaires"
+BASE_URL = "http://187.124.35.219:8085/api/proprietaires"
 HEADERS = {"Content-Type": "application/json"}
 
 def get_all_proprietaires():
