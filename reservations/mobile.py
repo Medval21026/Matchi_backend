@@ -1118,6 +1118,9 @@ def _send_messages_optimized(titre, message, fcm_tokens):
         project_id = 'matchi-8543f'
         url = f'https://fcm.googleapis.com/v1/projects/{project_id}/messages:send'
 
+        # Compteur pour limiter les logs d'erreur
+        error_log_count = [0]  # Utiliser une liste pour pouvoir modifier dans la closure
+
         def send_to_token(token):
             if not token:
                 return False
@@ -1138,9 +1141,22 @@ def _send_messages_optimized(titre, message, fcm_tokens):
             }
 
             try:
-                response = requests.post(url, headers=headers, json=notification, timeout=2)
+                response = requests.post(url, headers=headers, json=notification, timeout=10)
+                if response.status_code != 200:
+                    # Logger seulement les premières erreurs pour éviter le spam
+                    if error_log_count[0] < 5:
+                        print(f"❌ Erreur FCM {response.status_code} pour token {token[:20]}...: {response.text[:200]}")
+                        error_log_count[0] += 1
                 return response.status_code == 200
-            except Exception:
+            except requests.exceptions.Timeout:
+                if error_log_count[0] < 5:
+                    print(f"❌ Timeout pour token {token[:20]}...")
+                    error_log_count[0] += 1
+                return False
+            except Exception as e:
+                if error_log_count[0] < 5:
+                    print(f"❌ Exception pour token {token[:20]}...: {type(e).__name__}: {str(e)[:200]}")
+                    error_log_count[0] += 1
                 return False
 
         success_count = 0
@@ -1222,20 +1238,27 @@ def send_message_to_all_joueurs(request):
         fcm_tokens = list(joueurs.values_list('fcm_tokenjoueur', flat=True))
         fcm_tokens = [token for token in fcm_tokens if token]  # Filtrer les valeurs None/vides
 
-        # Démarrer l'envoi optimisé
-        # Important: éviter un thread daemon au niveau de la requête web, car il
-        # peut être interrompu dès la fin de la réponse HTTP selon l'environnement.
-        # On exécute donc l'envoi directement pour garantir le traitement.
-        print(f"Lancement de l'envoi pour {total} joueurs...")
-        send_result = _send_messages_optimized(titre, message, fcm_tokens)
+        # Lancer l'envoi en arrière-plan avec threading pour éviter le timeout Gunicorn
+        # L'envoi de 848 messages peut prendre plusieurs minutes
+        import threading
+        def send_async():
+            try:
+                print(f"Lancement de l'envoi asynchrone pour {total} joueurs...")
+                send_result = _send_messages_optimized(titre, message, fcm_tokens)
+                print(f"Envoi asynchrone terminé: {send_result}")
+            except Exception as e:
+                print(f"Erreur dans l'envoi asynchrone: {e}")
+                import traceback
+                traceback.print_exc()
 
-        # Retourner la réponse une fois l'envoi terminé
+        thread = threading.Thread(target=send_async, daemon=False)
+        thread.start()
+
+        # Retourner immédiatement pour éviter le timeout
         return JsonResponse({
-            'message': 'Envoi terminé',
+            'message': 'Envoi démarré en arrière-plan',
             'total_joueurs': total,
-            'status': 'completed',
-            'succes': send_result.get('succes', 0),
-            'erreurs': send_result.get('erreurs', 0)
+            'status': 'processing'
         }, status=200)
 
     except json.JSONDecodeError:
