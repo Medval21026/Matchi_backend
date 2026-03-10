@@ -23,9 +23,38 @@ except ImportError:
 # BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-MEDIA_URL = '/media/'
+CLOUDFLARE_ACCOUNT_ID = os.getenv('CLOUDFLARE_ACCOUNT_ID', '')
+R2_ACCESS_KEY_ID      = os.getenv('R2_ACCESS_KEY_ID', '')
+R2_SECRET_ACCESS_KEY  = os.getenv('R2_SECRET_ACCESS_KEY', '')
+R2_BUCKET_NAME        = os.getenv('R2_BUCKET_NAME', 'images')
+R2_PUBLIC_URL         = os.getenv('R2_PUBLIC_URL', '')
 
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+USE_R2 = all([CLOUDFLARE_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_PUBLIC_URL])
+
+if USE_R2:
+    STORAGES = {
+        "default": {
+            "BACKEND": "storages.backends.s3boto3.S3Boto3Storage",
+            "OPTIONS": {
+                "access_key": R2_ACCESS_KEY_ID,
+                "secret_key": R2_SECRET_ACCESS_KEY,
+                "bucket_name": R2_BUCKET_NAME,
+                "endpoint_url": f"https://{CLOUDFLARE_ACCOUNT_ID}.r2.cloudflarestorage.com",
+                "custom_domain": R2_PUBLIC_URL.replace("https://", ""),
+                "file_overwrite": False,
+                "default_acl": None,
+                "querystring_auth": False,
+            },
+        },
+        "staticfiles": {
+            "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
+        },
+    }
+    MEDIA_URL = f"{R2_PUBLIC_URL}/"
+    MEDIA_ROOT = ""
+else:
+    MEDIA_URL = '/media/'
+    MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 LOGIN_URL='/'
 LOGIN_REDIRECT_URL = '/page_acceuil/'
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -51,7 +80,8 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
-    'corsheaders', 
+    'corsheaders',
+    'storages',
 ]
 
 MIDDLEWARE = [
