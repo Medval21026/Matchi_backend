@@ -218,13 +218,18 @@ CSRF_TRUSTED_ORIGINS = [
 ]
 
 # Configuration Kafka
-# Configuration pour VPS: 187.124.35.219:9092
+# Configuration pour VPS: 187.124.35.219:8081 (Kafka) et 187.124.35.219:8085 (Spring Boot)
 # Peut être surchargée via variable d'environnement KAFKA_BOOTSTRAP_SERVERS
-KAFKA_BOOTSTRAP_SERVERS = os.getenv('KAFKA_BOOTSTRAP_SERVERS', '187.124.35.219:9092')
+KAFKA_BOOTSTRAP_SERVERS = os.getenv(
+    'KAFKA_BOOTSTRAP_SERVERS',
+    '187.124.35.219:8081'  # Broker Kafka sur le VPS
+)
+
 KAFKA_CONFIG = {
     'bootstrap_servers': KAFKA_BOOTSTRAP_SERVERS,
     'client_id': 'django-reservation-app',
 }
+
 KAFKA_TOPIC = 'horaire-sync-topic'
 
 # Configuration des headers de sécurité
