@@ -218,12 +218,11 @@ CSRF_TRUSTED_ORIGINS = [
 ]
 
 # Configuration Kafka
-# UI Kafka tourne sur 8081, mais le broker est sur le port 9093 (cf. écran Brokers de l'UI)
-# Donc les consumers (Django, Spring Boot, etc.) doivent utiliser 187.124.35.219:9093
+# UI Kafka est sur 8081, le broker Kafka est exposé sur 9092 (vu dans docker ps: 0.0.0.0:9092->9092/tcp)
 # Peut être surchargée via la variable d'environnement KAFKA_BOOTSTRAP_SERVERS
 KAFKA_BOOTSTRAP_SERVERS = os.getenv(
     'KAFKA_BOOTSTRAP_SERVERS',
-    '187.124.35.219:9093'  # Broker Kafka sur le VPS
+    '187.124.35.219:9092'  # Port exposé par Docker (testé et accessible depuis Hostinger)
 )
 
 KAFKA_CONFIG = {
