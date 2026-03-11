@@ -6,6 +6,20 @@ from .models import Client, DemandeReservation, Joueurs, Periode, Terrains, Rese
 from django.contrib.auth.hashers import make_password
 
 
+class AbsoluteImageField(serializers.ImageField):
+    """ImageField qui retourne toujours une URL absolue (compatible R2 et local)."""
+    def to_representation(self, value):
+        if not value:
+            return None
+        url = value.url
+        if url.startswith('http'):
+            return url
+        request = self.context.get('request')
+        if request:
+            return request.build_absolute_uri(url)
+        return url
+
+
 class ClientSerializer(serializers.ModelSerializer):
     class Meta:
         model = Client
@@ -20,6 +34,10 @@ class ClientSerializer(serializers.ModelSerializer):
 
 
 class TerrainSerializer(serializers.ModelSerializer):
+    photo1 = AbsoluteImageField(required=False)
+    photo2 = AbsoluteImageField(required=False)
+    photo3 = AbsoluteImageField(required=False)
+
     class Meta:
         model = Terrains
         fields = '__all__'
@@ -41,6 +59,9 @@ class WilayeSerializer(serializers.ModelSerializer):
 
 class TerrainsSerializer(serializers.ModelSerializer):
     wilaye = WilayeSerializer()
+    photo1 = AbsoluteImageField(required=False)
+    photo2 = AbsoluteImageField(required=False)
+    photo3 = AbsoluteImageField(required=False)
 
     class Meta:
         model = Terrains
@@ -52,6 +73,8 @@ class MoughataaSerializer(serializers.ModelSerializer):
         model = Moughataa
         fields = '__all__'
 class AcademieSerializer(serializers.ModelSerializer):
+    photo = AbsoluteImageField(required=False)
+
     class Meta:
         model = Academie
         fields = '__all__'
@@ -59,6 +82,7 @@ class AcademieSerializer(serializers.ModelSerializer):
 class JoueurSerializer(serializers.ModelSerializer):
     wilaye = WilayeSerializer()  # Inclure les détails de la wilaya
     moughataa = MoughataaSerializer()  # Inclure les détails de la moughataa
+    photo_de_profile = AbsoluteImageField(required=False)
 
     class Meta:
         model = Joueurs

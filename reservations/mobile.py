@@ -13,6 +13,17 @@ from rest_framework.views import APIView
 from django.contrib.auth import authenticate, login
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework.generics import ListAPIView
+from django.conf import settings
+
+
+def get_image_url(request, image_field):
+    """Retourne l'URL absolue d'un ImageField, compatible local et Cloudflare R2."""
+    if not image_field:
+        return None
+    url = image_field.url
+    if url.startswith('http'):
+        return url
+    return request.build_absolute_uri(url)
 from .serializers import DemandeReservationSerializer, ReservationSerializer
 from django.views.decorators.http import require_POST
 import json
@@ -298,9 +309,9 @@ def get_all_terrains(request):
                 'nombre_joueur': terrain.nombre_joueur,
                 'lieu_fr': terrain.lieu_fr,
                 'lieu_ar': terrain.lieu_ar,
-                'photo1': request.build_absolute_uri(terrain.photo1.url) if terrain.photo1 else None,
-                'photo2': request.build_absolute_uri(terrain.photo2.url) if terrain.photo2 else None,
-                'photo3': request.build_absolute_uri(terrain.photo3.url) if terrain.photo3 else None,
+                'photo1': get_image_url(request, terrain.photo1),
+                'photo2': get_image_url(request, terrain.photo2),
+                'photo3': get_image_url(request, terrain.photo3),
                 'prix_par_heure': terrain.prix_par_heure,
                 'client': terrain.client.nom,  # Utiliser le nom du client au lieu de l'ID
                 'wilaye_nom_fr': terrain.wilaye.nom_wilaye_fr if terrain.wilaye else None,
@@ -460,7 +471,7 @@ def heures_disponibles(request, client_id, date):
 class TerrainsListView(APIView):
     def get(self, request):
         terrains = Terrains.objects.all()
-        serializer = TerrainSerializer(terrains, many=True)
+        serializer = TerrainSerializer(terrains, many=True, context={'request': request})
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 from datetime import datetime, timedelta
@@ -638,7 +649,7 @@ def joueur_detail(request, joueur_id):
         'numero_telephone': joueur.numero_telephone,
         'poste': joueur.poste,
         'age': joueur.age,
-        'photo_de_profile': joueur.photo_de_profile.url if joueur.photo_de_profile else None,
+        'photo_de_profile': get_image_url(request, joueur.photo_de_profile),
         'height': joueur.height,
         'weight': joueur.weight,
         'visible': joueur.visible,
@@ -917,7 +928,7 @@ def login_joueur(request):
                 'age': joueur.age,
                 'height': joueur.height,
                 'weight': joueur.weight,
-                'photo_de_profile': joueur.photo_de_profile.url if joueur.photo_de_profile else None,
+                'photo_de_profile': get_image_url(request, joueur.photo_de_profile),
             }
             return Response(response_data, status=status.HTTP_200_OK)
         else:
