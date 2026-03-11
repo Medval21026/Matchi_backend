@@ -63,3 +63,7 @@ next-env.d.ts
 .env
 
 #chat
+images_backup.zip
+media2_backup.zip
+*.zip
+media/
